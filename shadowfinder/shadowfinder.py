@@ -17,6 +17,14 @@ class ShadowFinder:
 
         self.fig = None
 
+    def quick_find(self):
+        self.generate_lat_lon_grid()
+        self.find_shadows()
+        fig = self.plot_shadows()
+        fig.savefig(
+            f"shadow_finder_{self.date_time.strftime('%Y%m%d-%H%M%S-%Z')}_{self.object_height}_{self.shadow_length}.png"
+        )
+
     def generate_lat_lon_grid(self, angular_resolution=0.25):
         lats = np.arange(-90, 90, angular_resolution)
         lons = np.arange(-180, 180, angular_resolution)
