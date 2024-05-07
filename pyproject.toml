@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "ShadowFinder"
+version = "0.1.0"
+description = "Find possible locations of shadows."
+authors = ["Bellingcat"]
+license = "MIT License"
+readme = "README.md"
+repository = "https://github.com/bellingcat/ShadowFinder"
+classifiers = [
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Visualization",
+]
+keywords=["shadow", "finder", "locator", "map"]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/bellingcat/ShadowFinder/issues"
+
+[tool.poetry.dependencies]
+python =  ">=3.9,<3.13"
+matplotlib = "^3.8"
+basemap = "^1.4"
+suncalc = "^0.1.3"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.2.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
