@@ -11,3 +11,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Output files
+*.png
