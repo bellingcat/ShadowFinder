@@ -10,7 +10,7 @@ from timezonefinder import TimezoneFinder
 
 
 class ShadowFinder:
-    def __init__(self, object_height, shadow_length, date_time):
+    def __init__(self, object_height=None, shadow_length=None, date_time=None):
         self.object_height = object_height
         self.shadow_length = shadow_length
         self.date_time = date_time
@@ -23,6 +23,11 @@ class ShadowFinder:
         self.tf = TimezoneFinder(in_memory=True)
 
         self.fig = None
+
+    def set_details(self, object_height, shadow_length, date_time):
+        self.object_height = object_height
+        self.shadow_length = shadow_length
+        self.date_time = date_time
 
     def quick_find(self):
         self.generate_lat_lon_grid()
