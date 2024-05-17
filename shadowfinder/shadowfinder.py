@@ -45,14 +45,14 @@ class ShadowFinder:
             self.time_format = time_format
 
     def quick_find(self):
-        self.generate_lat_lon_grid()
+        self.generate_timezone_grid()
         self.find_shadows()
         fig = self.plot_shadows()
         fig.savefig(
             f"shadow_finder_{self.date_time.strftime('%Y%m%d-%H%M%S-%Z')}_{self.object_height}_{self.shadow_length}.png"
         )
 
-    def generate_lat_lon_grid(self):
+    def generate_timezone_grid(self):
         lats = np.arange(self.min_lat, self.max_lat, self.angular_resolution)
         lons = np.arange(self.min_lon, self.max_lon, self.angular_resolution)
 
@@ -66,7 +66,7 @@ class ShadowFinder:
             ]
         )
 
-    def save_timezones(self, filename="timezones.json"):
+    def save_timezone_grid(self, filename="timezone_grid.json"):
         data = {
             "min_lat": self.min_lat,
             "max_lat": self.max_lat,
@@ -78,7 +78,7 @@ class ShadowFinder:
 
         json.dump(data, open(filename, "w"))
 
-    def load_timezones(self, filename="timezones.json"):
+    def load_timezone_grid(self, filename="timezone_grid.json"):
         data = json.load(open(filename, "r"))
         
         self.min_lat = data["min_lat"]
@@ -97,7 +97,7 @@ class ShadowFinder:
         # Evaluate the sun's length at a grid of points on the Earth's surface
 
         if self.lats is None or self.lons is None or self.timezones is None:
-            self.generate_lat_lon_grid()
+            self.generate_timezone_grid()
 
         if self.time_format == "utc":
             valid_datetimes = self.date_time
