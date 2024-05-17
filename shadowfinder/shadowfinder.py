@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from mpl_toolkits.basemap import Basemap
 from timezonefinder import TimezoneFinder
+import json
 
 
 class ShadowFinder:
@@ -24,6 +25,12 @@ class ShadowFinder:
         self.tf = TimezoneFinder(in_memory=True)
 
         self.fig = None
+
+        self.angular_resolution=0.5
+        self.min_lat=-60
+        self.max_lat=85
+        self.min_lon=-180
+        self.max_lon=180
 
     def set_details(self, object_height, shadow_length, date_time, time_format=None):
         self.object_height = object_height
@@ -45,9 +52,9 @@ class ShadowFinder:
             f"shadow_finder_{self.date_time.strftime('%Y%m%d-%H%M%S-%Z')}_{self.object_height}_{self.shadow_length}.png"
         )
 
-    def generate_lat_lon_grid(self, angular_resolution=0.5):
-        lats = np.arange(-60, 85, angular_resolution)
-        lons = np.arange(-180, 180, angular_resolution)
+    def generate_lat_lon_grid(self):
+        lats = np.arange(self.min_lat, self.max_lat, self.angular_resolution)
+        lons = np.arange(self.min_lon, self.max_lon, self.angular_resolution)
 
         self.lons, self.lats = np.meshgrid(lons, lats)
 
@@ -59,14 +66,32 @@ class ShadowFinder:
             ]
         )
 
-    def save_timezones(self, filename="timezones.npz"):
-        np.savez(filename, lats=self.lats, lons=self.lons, timezones=self.timezones)
+    def save_timezones(self, filename="timezones.json"):
+        data = {
+            "min_lat": self.min_lat,
+            "max_lat": self.max_lat,
+            "min_lon": self.min_lon,
+            "max_lon": self.max_lon,
+            "angular_resolution": self.angular_resolution,
+            "timezones": self.timezones.tolist(),
+        }
 
-    def load_timezones(self, filename="timezones.npz"):
-        with np.load(filename, allow_pickle=True) as data:
-            self.lats = data["lats"]
-            self.lons = data["lons"]
-            self.timezones = data["timezones"]
+        json.dump(data, open(filename, "w"))
+
+    def load_timezones(self, filename="timezones.json"):
+        data = json.load(open(filename, "r"))
+        
+        self.min_lat = data["min_lat"]
+        self.max_lat = data["max_lat"]
+        self.min_lon = data["min_lon"]
+        self.max_lon = data["max_lon"]
+        self.angular_resolution = data["angular_resolution"]
+
+        lats = np.arange(self.min_lat, self.max_lat, self.angular_resolution)
+        lons = np.arange(self.min_lon, self.max_lon, self.angular_resolution)
+
+        self.lons, self.lats = np.meshgrid(lons, lats)
+        self.timezones = np.array(data["timezones"])
 
     def find_shadows(self):
         # Evaluate the sun's length at a grid of points on the Earth's surface
