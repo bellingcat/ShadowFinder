@@ -38,7 +38,7 @@ class ShadowFinder:
         )
 
     def generate_lat_lon_grid(self, angular_resolution=0.25):
-        lats = np.arange(-90, 90, angular_resolution)
+        lats = np.arange(-60, 85, angular_resolution)
         lons = np.arange(-180, 180, angular_resolution)
 
         self.lons, self.lats = np.meshgrid(lons, lats)
