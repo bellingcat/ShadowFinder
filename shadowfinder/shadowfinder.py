@@ -24,11 +24,15 @@ class ShadowFinder:
 
         self.fig = None
 
-    def set_details(self, object_height, shadow_length, date_time):
+        # config options
+        self.process_sea = False
+    def set_details(self, object_height, shadow_length, date_time, process_sea=None):
         self.object_height = object_height
         self.shadow_length = shadow_length
         self.date_time = date_time
 
+        if process_sea is not None:
+            self.process_sea = process_sea
     def quick_find(self):
         self.generate_lat_lon_grid()
         self.find_shadows()
@@ -43,10 +47,12 @@ class ShadowFinder:
 
         self.lons, self.lats = np.meshgrid(lons, lats)
 
+        evaluate_timezones = self.tf.timezone_at if self.process_sea else self.tf.timezone_at_land
+
         # Create a pandas series of datetimes adjusted for each timezone
         self.timezones = np.array(
             [
-                self.tf.timezone_at_land(lng=lon, lat=lat)
+                evaluate_timezones(lng=lon, lat=lat)
                 for lat, lon in zip(self.lats.flatten(), self.lons.flatten())
             ]
         )
