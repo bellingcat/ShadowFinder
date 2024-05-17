@@ -1,8 +1,12 @@
+import datetime
+from pytz import timezone
+import pandas as pd
 from suncalc import get_position
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from mpl_toolkits.basemap import Basemap
+from timezonefinder import TimezoneFinder
 
 
 class ShadowFinder:
@@ -14,6 +18,9 @@ class ShadowFinder:
         self.lats = None
         self.lons = None
         self.shadow_lengths = None
+
+        self.timezones = None
+        self.tf = TimezoneFinder(in_memory=True)
 
         self.fig = None
 
@@ -31,27 +38,66 @@ class ShadowFinder:
 
         self.lons, self.lats = np.meshgrid(lons, lats)
 
+        # Create a pandas series of datetimes adjusted for each timezone
+        self.timezones = np.array(
+            [
+                self.tf.timezone_at_land(lng=lon, lat=lat)
+                for lat, lon in zip(self.lats.flatten(), self.lons.flatten())
+            ]
+        )
     def find_shadows(self):
         # Evaluate the sun's length at a grid of points on the Earth's surface
 
-        if self.lats is None or self.lons is None:
+        if self.lats is None or self.lons is None or self.timezones is None:
             self.generate_lat_lon_grid()
 
-        pos_obj = get_position(self.date_time, self.lons, self.lats)
+        datetimes = np.array(
+            [
+                (
+                    None
+                    if tz is None
+                    else self.date_time.replace(tzinfo=timezone(tz))
+                    .astimezone(datetime.timezone.utc)
+                    .timestamp()
+                )
+                for tz in self.timezones
+            ]
+        )
+        # Create mask for invalid datetimes
+        mask = np.array([dt is not None for dt in datetimes])
+
+        # Only process the valid datetimes
+        valid_datetimes = np.extract(mask, datetimes)
+        valid_lons = np.extract(mask, self.lons.flatten())
+        valid_lats = np.extract(mask, self.lats.flatten())
+
+        # Convert the datetimes to pandas series of timestamps
+        valid_datetimes = pd.to_datetime(valid_datetimes, unit="s", utc=True)
+
+        pos_obj = get_position(valid_datetimes, valid_lons, valid_lats)
+
+        valid_sun_altitudes = pos_obj["altitude"]  # in radians
+
         # Calculate the shadow length
         shadow_lengths = self.object_height / np.apply_along_axis(
-            np.tan, 0, sun_altitudes
+            np.tan, 0, valid_sun_altitudes
         )
 
         # Replace points where the sun is below the horizon with nan
-        shadow_lengths[sun_altitudes <= 0] = np.nan
+        shadow_lengths[valid_sun_altitudes <= 0] = np.nan
 
         # Show the relative difference between the calculated shadow length and the observed shadow length
         shadow_relative_length_difference = (
             shadow_lengths - self.shadow_length
         ) / self.shadow_length
 
-        self.shadow_lengths = shadow_relative_length_difference
+        shadow_lengths = shadow_relative_length_difference
+
+        self.shadow_lengths = np.full(np.shape(mask), np.nan)
+        np.place(self.shadow_lengths, mask, shadow_lengths)
+        self.shadow_lengths = np.reshape(
+            self.shadow_lengths, np.shape(self.lons), order="A"
+        )
 
     def plot_shadows(
         self,
