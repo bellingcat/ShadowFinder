@@ -10,8 +10,10 @@ from timezonefinder import TimezoneFinder
 
 
 class ShadowFinder:
-    def __init__(self, object_height=None, shadow_length=None, date_time=None, time_format='utc'):
-        
+    def __init__(
+        self, object_height=None, shadow_length=None, date_time=None, time_format="utc"
+    ):
+
         self.set_details(object_height, shadow_length, date_time, time_format)
 
         self.lats = None
@@ -27,9 +29,12 @@ class ShadowFinder:
         self.object_height = object_height
         self.shadow_length = shadow_length
         self.date_time = date_time
-        
+
         if time_format is not None:
-            assert time_format in ['utc', 'local'], "time_format must be 'utc' or 'local'"
+            assert time_format in [
+                "utc",
+                "local",
+            ], "time_format must be 'utc' or 'local'"
             self.time_format = time_format
 
     def quick_find(self):
@@ -86,7 +91,7 @@ class ShadowFinder:
                     for tz in self.timezones
                 ]
             )
-            
+
             # Create mask for invalid datetimes
             mask = np.array([dt is not None for dt in datetimes])
 
@@ -97,8 +102,6 @@ class ShadowFinder:
 
             # Convert the datetimes to pandas series of timestamps
             valid_datetimes = pd.to_datetime(valid_datetimes, unit="s", utc=True)
-
-
 
         pos_obj = get_position(valid_datetimes, valid_lons, valid_lats)
 
