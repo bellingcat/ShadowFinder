@@ -26,13 +26,19 @@ class ShadowFinder:
 
         # config options
         self.process_sea = False
-    def set_details(self, object_height, shadow_length, date_time, process_sea=None):
+        self.time_format = "utc" # "utc" or "local"
+
+    def set_details(self, object_height, shadow_length, date_time, process_sea=None, time_format=None):
         self.object_height = object_height
         self.shadow_length = shadow_length
         self.date_time = date_time
 
         if process_sea is not None:
             self.process_sea = process_sea
+        
+        if time_format is not None:
+            self.time_format = time_format
+
     def quick_find(self):
         self.generate_lat_lon_grid()
         self.find_shadows()
@@ -72,28 +78,38 @@ class ShadowFinder:
         if self.lats is None or self.lons is None or self.timezones is None:
             self.generate_lat_lon_grid()
 
-        datetimes = np.array(
-            [
-                (
-                    None
-                    if tz is None
-                    else self.date_time.replace(tzinfo=timezone(tz))
-                    .astimezone(datetime.timezone.utc)
-                    .timestamp()
-                )
-                for tz in self.timezones
-            ]
-        )
-        # Create mask for invalid datetimes
-        mask = np.array([dt is not None for dt in datetimes])
+        assert self.time_format in ["utc", "local"], "Invalid time format"
 
-        # Only process the valid datetimes
-        valid_datetimes = np.extract(mask, datetimes)
-        valid_lons = np.extract(mask, self.lons.flatten())
-        valid_lats = np.extract(mask, self.lats.flatten())
+        if self.time_format == "utc":
+            valid_datetimes = self.date_time
+            valid_lats = self.lats.flatten()
+            valid_lons = self.lons.flatten()
+        elif self.time_format == "local":
+            datetimes = np.array(
+                [
+                    (
+                        None
+                        if tz is None
+                        else self.date_time.replace(tzinfo=timezone(tz))
+                        .astimezone(datetime.timezone.utc)
+                        .timestamp()
+                    )
+                    for tz in self.timezones
+                ]
+            )
+            
+            # Create mask for invalid datetimes
+            mask = np.array([dt is not None for dt in datetimes])
 
-        # Convert the datetimes to pandas series of timestamps
-        valid_datetimes = pd.to_datetime(valid_datetimes, unit="s", utc=True)
+            # Only process the valid datetimes
+            valid_datetimes = np.extract(mask, datetimes)
+            valid_lons = np.extract(mask, self.lons.flatten())
+            valid_lats = np.extract(mask, self.lats.flatten())
+
+            # Convert the datetimes to pandas series of timestamps
+            valid_datetimes = pd.to_datetime(valid_datetimes, unit="s", utc=True)
+
+
 
         pos_obj = get_position(valid_datetimes, valid_lons, valid_lats)
 
@@ -114,8 +130,11 @@ class ShadowFinder:
 
         shadow_lengths = shadow_relative_length_difference
 
-        self.shadow_lengths = np.full(np.shape(mask), np.nan)
-        np.place(self.shadow_lengths, mask, shadow_lengths)
+        if self.time_format == "utc":
+            self.shadow_lengths = shadow_lengths
+        elif self.time_format == "local":
+            self.shadow_lengths = np.full(np.shape(mask), np.nan)
+            np.place(self.shadow_lengths, mask, shadow_lengths)
         self.shadow_lengths = np.reshape(
             self.shadow_lengths, np.shape(self.lons), order="A"
         )
