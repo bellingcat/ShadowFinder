@@ -47,7 +47,7 @@ class ShadowFinder:
             f"shadow_finder_{self.date_time.strftime('%Y%m%d-%H%M%S-%Z')}_{self.object_height}_{self.shadow_length}.png"
         )
 
-    def generate_lat_lon_grid(self, angular_resolution=0.25):
+    def generate_lat_lon_grid(self, angular_resolution=0.5):
         lats = np.arange(-60, 85, angular_resolution)
         lons = np.arange(-180, 180, angular_resolution)
 
