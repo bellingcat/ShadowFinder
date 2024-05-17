@@ -1,4 +1,3 @@
-from types import SimpleNamespace
 from suncalc import get_position
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,7 +11,8 @@ class ShadowFinder:
         self.shadow_length = shadow_length
         self.date_time = date_time
 
-        self.grid = None
+        self.lats = None
+        self.lons = None
         self.shadow_lengths = None
 
         self.fig = None
@@ -29,19 +29,15 @@ class ShadowFinder:
         lats = np.arange(-90, 90, angular_resolution)
         lons = np.arange(-180, 180, angular_resolution)
 
-        lons, lats = np.meshgrid(lons, lats)
-
-        self.grid = SimpleNamespace(lons=lons, lats=lats)
+        self.lons, self.lats = np.meshgrid(lons, lats)
 
     def find_shadows(self):
         # Evaluate the sun's length at a grid of points on the Earth's surface
 
-        if self.grid is None:
+        if self.lats is None or self.lons is None:
             self.generate_lat_lon_grid()
 
-        pos_obj = get_position(self.date_time, self.grid.lons, self.grid.lats)
-        sun_altitudes = pos_obj["altitude"]  # in radians
-
+        pos_obj = get_position(self.date_time, self.lons, self.lats)
         # Calculate the shadow length
         shadow_lengths = self.object_height / np.apply_along_axis(
             np.tan, 0, sun_altitudes
@@ -71,7 +67,7 @@ class ShadowFinder:
         m.drawcountries()
 
         # Deal with the map projection
-        x, y = m(self.grid.lons, self.grid.lats)
+        x, y = m(self.lons, self.lats)
 
         # Set the a color scale and only show the values between 0 and 0.2
         cmap = plt.cm.get_cmap("inferno_r")
