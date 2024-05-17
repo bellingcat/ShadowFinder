@@ -10,9 +10,9 @@ from timezonefinder import TimezoneFinder
 
 
 class ShadowFinder:
-    def __init__(self, object_height=None, shadow_length=None, date_time=None, process_sea=False, time_format='utc'):
+    def __init__(self, object_height=None, shadow_length=None, date_time=None, time_format='utc'):
         
-        self.set_details(object_height, shadow_length, date_time, process_sea, time_format)
+        self.set_details(object_height, shadow_length, date_time, time_format)
 
         self.lats = None
         self.lons = None
@@ -23,14 +23,10 @@ class ShadowFinder:
 
         self.fig = None
 
-    def set_details(self, object_height, shadow_length, date_time, process_sea=None, time_format=None):
+    def set_details(self, object_height, shadow_length, date_time, time_format=None):
         self.object_height = object_height
         self.shadow_length = shadow_length
         self.date_time = date_time
-
-        if process_sea is not None:
-            assert process_sea in [True, False], "process_sea must be a boolean"
-            self.process_sea = process_sea
         
         if time_format is not None:
             assert time_format in ['utc', 'local'], "time_format must be 'utc' or 'local'"
@@ -50,12 +46,10 @@ class ShadowFinder:
 
         self.lons, self.lats = np.meshgrid(lons, lats)
 
-        evaluate_timezones = self.tf.timezone_at if self.process_sea else self.tf.timezone_at_land
-
         # Create a pandas series of datetimes adjusted for each timezone
         self.timezones = np.array(
             [
-                evaluate_timezones(lng=lon, lat=lat)
+                self.tf.timezone_at(lng=lon, lat=lat)
                 for lat, lon in zip(self.lats.flatten(), self.lons.flatten())
             ]
         )
