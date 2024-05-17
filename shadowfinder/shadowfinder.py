@@ -50,6 +50,16 @@ class ShadowFinder:
                 for lat, lon in zip(self.lats.flatten(), self.lons.flatten())
             ]
         )
+
+    def save_timezones(self, filename="timezones.npz"):
+        np.savez(filename, lats=self.lats, lons=self.lons, timezones=self.timezones)
+
+    def load_timezones(self, filename="timezones.npz"):
+        with np.load(filename, allow_pickle=True) as data:
+            self.lats = data["lats"]
+            self.lons = data["lons"]
+            self.timezones = data["timezones"]
+
     def find_shadows(self):
         # Evaluate the sun's length at a grid of points on the Earth's surface
 
