@@ -10,10 +10,9 @@ from timezonefinder import TimezoneFinder
 
 
 class ShadowFinder:
-    def __init__(self, object_height=None, shadow_length=None, date_time=None):
-        self.object_height = object_height
-        self.shadow_length = shadow_length
-        self.date_time = date_time
+    def __init__(self, object_height=None, shadow_length=None, date_time=None, process_sea=False, time_format='utc'):
+        
+        self.set_details(object_height, shadow_length, date_time, process_sea, time_format)
 
         self.lats = None
         self.lons = None
@@ -24,19 +23,17 @@ class ShadowFinder:
 
         self.fig = None
 
-        # config options
-        self.process_sea = False
-        self.time_format = "utc" # "utc" or "local"
-
     def set_details(self, object_height, shadow_length, date_time, process_sea=None, time_format=None):
         self.object_height = object_height
         self.shadow_length = shadow_length
         self.date_time = date_time
 
         if process_sea is not None:
+            assert process_sea in [True, False], "process_sea must be a boolean"
             self.process_sea = process_sea
         
         if time_format is not None:
+            assert time_format in ['utc', 'local'], "time_format must be 'utc' or 'local'"
             self.time_format = time_format
 
     def quick_find(self):
@@ -77,8 +74,6 @@ class ShadowFinder:
 
         if self.lats is None or self.lons is None or self.timezones is None:
             self.generate_lat_lon_grid()
-
-        assert self.time_format in ["utc", "local"], "Invalid time format"
 
         if self.time_format == "utc":
             valid_datetimes = self.date_time
