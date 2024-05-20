@@ -49,7 +49,7 @@ class ShadowFinder:
         self.find_shadows()
         fig = self.plot_shadows()
         fig.savefig(
-            f"shadow_finder_{self.date_time.strftime('%Y%m%d-%H%M%S-%Z')}_{self.object_height}_{self.shadow_length}.png"
+            f"shadow_finder_{self.date_time.strftime('%Y%m%d-%H%M%S')}-{self.time_format.title()}_{self.object_height}_{self.shadow_length}.png"
         )
 
     def generate_timezone_grid(self):
@@ -181,7 +181,7 @@ class ShadowFinder:
 
         # plt.colorbar(label='Relative Shadow Length Difference')
         plt.title(
-            f"Possible Locations at {self.date_time.strftime('%Y-%m-%d %H:%M:%S %Z')}\n(object height: {self.object_height}, shadow length: {self.shadow_length})"
+            f"Possible Locations at {self.date_time.strftime('%Y-%m-%d %H:%M:%S')} {self.time_format.title()}\n(object height: {self.object_height}, shadow length: {self.shadow_length})"
         )
         self.fig = fig
         return fig
