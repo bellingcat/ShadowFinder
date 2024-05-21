@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ShadowFinder"
-version = "0.2.1"
+version = "0.2.2"
 description = "Find possible locations of shadows."
 authors = ["Bellingcat"]
 license = "MIT License"
