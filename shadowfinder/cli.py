@@ -38,9 +38,7 @@ class ShadowFinderCli:
         """
 
         try:
-            date_time = datetime.strptime(
-                f"{date} {time}", "%Y-%m-%d %H:%M:%S"
-            ).replace(tzinfo=timezone.utc)
+            date_time = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M:%S")
         except Exception as e:
             raise ValueError(f"Invalid argument type or format: {e}")
         _validate_args(object_height, shadow_length, date_time)

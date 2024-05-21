@@ -1,5 +1,4 @@
-import datetime
-from pytz import timezone
+from pytz import timezone, utc
 import pandas as pd
 from suncalc import get_position
 import numpy as np
@@ -8,6 +7,7 @@ import matplotlib.colors as colors
 from mpl_toolkits.basemap import Basemap
 from timezonefinder import TimezoneFinder
 import json
+from warnings import warn
 
 
 class ShadowFinder:
@@ -35,6 +35,11 @@ class ShadowFinder:
     def set_details(self, object_height, shadow_length, date_time, time_format=None):
         self.object_height = object_height
         self.shadow_length = shadow_length
+        if date_time is not None and date_time.tzinfo is not None:
+            warn(
+                "date_time is expected to be timezone naive (i.e. tzinfo=None). Any timezone information will be ignored."
+            )
+            date_time = date_time.replace(tzinfo=None)
         self.date_time = date_time
 
         if time_format is not None:
@@ -100,7 +105,7 @@ class ShadowFinder:
             self.generate_timezone_grid()
 
         if self.time_format == "utc":
-            valid_datetimes = self.date_time
+            valid_datetimes = utc.localize(self.date_time)
             valid_lats = self.lats.flatten()
             valid_lons = self.lons.flatten()
         elif self.time_format == "local":
@@ -109,8 +114,9 @@ class ShadowFinder:
                     (
                         None
                         if tz is None
-                        else self.date_time.replace(tzinfo=timezone(tz))
-                        .astimezone(datetime.timezone.utc)
+                        else timezone(tz)
+                        .localize(self.date_time)
+                        .astimezone(utc)
                         .timestamp()
                     )
                     for tz in self.timezones
