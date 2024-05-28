@@ -46,8 +46,6 @@ class ShadowFinder:
         time_format=None,
         sun_altitude_angle=None,
     ):
-        self.object_height = object_height
-        self.shadow_length = shadow_length
         if date_time is not None and date_time.tzinfo is not None:
             warn(
                 "date_time is expected to be timezone naive (i.e. tzinfo=None). Any timezone information will be ignored."
@@ -62,7 +60,16 @@ class ShadowFinder:
             ], "time_format must be 'utc' or 'local'"
             self.time_format = time_format
 
+        if not (
+                (object_height is None and shadow_length is None) or 
+                sun_altitude_angle is None
+        ):
+            raise ValueError("Please either set object_height and shadow_length or set sun_altitude_angle")
+
+        self.object_height = object_height
+        self.shadow_length = shadow_length
         self.sun_altitude_angle = sun_altitude_angle
+
 
     def quick_find(self):
         self.generate_timezone_grid()
