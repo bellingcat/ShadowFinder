@@ -8,7 +8,6 @@ from mpl_toolkits.basemap import Basemap
 from timezonefinder import TimezoneFinder
 import json
 from warnings import warn
-import operator
 
 
 class ShadowFinder:
