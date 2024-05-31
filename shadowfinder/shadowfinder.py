@@ -65,15 +65,26 @@ class ShadowFinder:
         # either height or angle must be set (but not both or neither)
         valid_input = (
                 ((object_height is None) == (shadow_length is None)) and 
-                ((object_height is None) ^ (sun_altitude_angle is None))
+                ((object_height is None) or (sun_altitude_angle is None))
         )
 
         if not valid_input:
             raise ValueError("Please either set object_height and shadow_length or set sun_altitude_angle")
 
-        self.object_height = object_height
-        self.shadow_length = shadow_length
-        self.sun_altitude_angle = sun_altitude_angle
+        # If lengths are given, we clear the previous sun altitude angle
+        # If sun altitude angle is given, we clear the previous lengths
+        # If neither are given, we keep the previous values
+        if object_height is not None:
+            self.object_height = object_height
+            self.shadow_length = shadow_length
+            self.sun_altitude_angle = None
+        elif sun_altitude_angle is not None:
+            self.object_height = None
+            self.shadow_length = None
+            self.sun_altitude_angle = sun_altitude_angle
+        else:
+            # Lengths and angle are None and we use the same values as before
+            pass
 
 
     def quick_find(self):
