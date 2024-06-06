@@ -261,7 +261,7 @@ class ShadowFinder:
         # plt.colorbar(label='Relative Shadow Length Difference')
 
         if self.sun_altitude_angle is not None:
-            plt_title = f"Possible Locations at {self.date_time.strftime('%Y-%m-%d %H:%M:%S')} {self.time_format.title()}\n(sun altitue angle: {self.sun_altitude_angle})"
+            plt_title = f"Possible Locations at {self.date_time.strftime('%Y-%m-%d %H:%M:%S')} {self.time_format.title()}\n(sun altitude angle: {self.sun_altitude_angle})"
         else:
             plt_title = f"Possible Locations at {self.date_time.strftime('%Y-%m-%d %H:%M:%S')} {self.time_format.title()}\n(object height: {self.object_height}, shadow length: {self.shadow_length})"
 
