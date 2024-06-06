@@ -14,3 +14,5 @@ venv.bak/
 
 # Output files
 *.png
+
+**/.DS_Store
