@@ -204,7 +204,7 @@ class ShadowFinder:
             # Show relative difference between sun altitudes
             location_likelihoods = (
                 np.array(valid_sun_altitudes) - radians(self.sun_altitude_angle)
-            ) / self.sun_altitude_angle
+            ) / radians(self.sun_altitude_angle)
 
             # Replace points where the sun is below the horizon
             location_likelihoods[valid_sun_altitudes <= 0] = np.nan
