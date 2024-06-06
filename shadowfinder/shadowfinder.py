@@ -10,6 +10,7 @@ import json
 from warnings import warn
 from math import radians
 
+
 class ShadowFinder:
     def __init__(
         self,
@@ -46,7 +47,7 @@ class ShadowFinder:
         time_format=None,
         sun_altitude_angle=None,
     ):
-        
+
         if date_time is not None and date_time.tzinfo is not None:
             warn(
                 "date_time is expected to be timezone naive (i.e. tzinfo=None). Any timezone information will be ignored."
@@ -63,13 +64,16 @@ class ShadowFinder:
 
         # height and length must have the same None-ness
         # either height or angle must be set (but not both or neither)
+        # fmt: off
         valid_input = (
-                ((object_height is None) == (shadow_length is None)) and 
-                ((object_height is None) or (sun_altitude_angle is None))
+            ((object_height is None) == (shadow_length is None)) and 
+            ((object_height is None) or (sun_altitude_angle is None))
         )
-
+        # fmt: on
         if not valid_input:
-            raise ValueError("Please either set object_height and shadow_length or set sun_altitude_angle")
+            raise ValueError(
+                "Please either set object_height and shadow_length or set sun_altitude_angle"
+            )
 
         # If lengths are given, we clear the previous sun altitude angle
         # If sun altitude angle is given, we clear the previous lengths
@@ -81,12 +85,13 @@ class ShadowFinder:
         elif sun_altitude_angle is not None:
             self.object_height = None
             self.shadow_length = None
-            assert 0 < sun_altitude_angle <= 90, "Sun altitude angle must be between 0 and 90 degrees"
+            assert (
+                0 < sun_altitude_angle <= 90
+            ), "Sun altitude angle must be between 0 and 90 degrees"
             self.sun_altitude_angle = sun_altitude_angle
         else:
             # Lengths and angle are None and we use the same values as before
             pass
-
 
     def quick_find(self):
         self.generate_timezone_grid()
