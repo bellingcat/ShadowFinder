@@ -8,7 +8,7 @@ from mpl_toolkits.basemap import Basemap
 from timezonefinder import TimezoneFinder
 import json
 from warnings import warn
-
+from math import radians
 
 class ShadowFinder:
     def __init__(
@@ -81,6 +81,7 @@ class ShadowFinder:
         elif sun_altitude_angle is not None:
             self.object_height = None
             self.shadow_length = None
+            assert 0 < sun_altitude_angle <= 90, "Sun altitude angle must be between 0 and 90 degrees"
             self.sun_altitude_angle = sun_altitude_angle
         else:
             # Lengths and angle are None and we use the same values as before
@@ -202,7 +203,7 @@ class ShadowFinder:
         elif self.sun_altitude_angle is not None:
             # Show relative difference between sun altitudes
             location_likelihoods = (
-                np.array(valid_sun_altitudes) - self.sun_altitude_angle
+                np.array(valid_sun_altitudes) - radians(self.sun_altitude_angle)
             ) / self.sun_altitude_angle
 
             # Replace points where the sun is below the horizon
