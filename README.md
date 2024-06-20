@@ -6,7 +6,10 @@
 
 A lightweight tool and Google Colab notebook for estimating the points on the Earth's surface where a shadow of a particular length could occur, for geolocation purposes.
 
-Using an object's height, the length of its shadow, the date and the time, ShadowFinder estimates the possible locations where that shadow could occur.
+Using an object's height, the length of its shadow, the date and the time, ShadowFinder estimates the possible locations where that shadow could occur. These possible locations are shown as a bright band on a map of the Earth:
+
+![ExampleShadowFinderOutput](https://github.com/bellingcat/ShadowFinder/assets/54807169/391c9b54-d5b4-463f-9c09-94ff1fec6ee4)
+
 
 ## Usage - Google Colab Notebook 🚀
 No installation necessary, just try it out using the [Google Colab notebook here](https://colab.research.google.com/github/Bellingcat/ShadowFinder/blob/main/ShadowFinderColab.ipynb)!
