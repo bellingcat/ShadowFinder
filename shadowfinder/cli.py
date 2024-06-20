@@ -70,7 +70,7 @@ class ShadowFinderCli:
     ) -> None:
         """
         Locate a shadow based on the solar altitude angle and the date and time.
-        :param sun_altitude_angle: Sun altitude angle in radians
+        :param sun_altitude_angle: Sun altitude angle in degrees
         :param date: Date in the format YYYY-MM-DD
         :param time: UTC Time in the format HH:MM:SS
         """
