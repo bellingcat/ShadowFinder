@@ -15,7 +15,7 @@ Using an object's height, the length of its shadow, the date and the time, Shado
 No installation necessary, just try it out using the [Google Colab notebook here](https://colab.research.google.com/github/Bellingcat/ShadowFinder/blob/main/ShadowFinderColab.ipynb)!
 
 ## Installation :magic_wand:
-[![PyPI - Version](https://img.shields.io/pypi/v/edgar-tool)](https://pypi.org/project/edgar-tool/)
+[![PyPI - Version](https://img.shields.io/pypi/v/ShadowFinder)](https://pypi.org/project/ShadowFinder/)
 
 ShadowFinder is built with the interactive notebook in mind, which can be downloaded and used in a local Jupyter environment, the package also provides a Python API and a command-line interface.
 
