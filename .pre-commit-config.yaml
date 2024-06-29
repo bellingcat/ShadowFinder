@@ -8,7 +8,25 @@ repos:
     -   id: end-of-file-fixer
     -   id: check-yaml
     -   id: check-added-large-files
--   repo: https://github.com/psf/black
-    rev: 24.2.0
+
+-   repo: local
     hooks:
     -   id: black
+        name: black
+        entry: poetry run black
+        language: system
+        types: [ python ]
+
+    -   id: poetry-lock
+        name: poetry lock
+        entry: poetry lock --no-update
+        language: system
+        types: [yaml]
+        files: ^pyproject\.toml$
+
+    -   id: poetry-export
+        name: poetry export
+        entry: poetry export -f requirements.txt -o requirements.txt
+        language: system
+        types: [yaml]
+        files: ^pyproject\.toml$
