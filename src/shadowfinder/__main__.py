@@ -1,4 +1,4 @@
-from shadowfinder.cli import ShadowFinderCli
+from cli import ShadowFinderCli
 import fire
 
 

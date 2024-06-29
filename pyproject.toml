@@ -5,6 +5,7 @@ description = "Find possible locations of shadows."
 authors = ["Bellingcat"]
 license = "MIT License"
 readme = "README.md"
+packages = [{ include = "shadowfinder", from = "src" }]
 repository = "https://github.com/bellingcat/ShadowFinder"
 classifiers = [
   "Intended Audience :: Developers",
@@ -20,7 +21,7 @@ keywords=["shadow", "finder", "locator", "map"]
 "Bug Tracker" = "https://github.com/bellingcat/ShadowFinder/issues"
 
 [tool.poetry.scripts]
-shadowfinder = "shadowfinder.main:main_entrypoint"
+shadowfinder = "shadowfinder:main_entrypoint"
 
 [tool.poetry.dependencies]
 python =  ">=3.9,<3.13"

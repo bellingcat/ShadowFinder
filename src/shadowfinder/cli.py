@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from shadowfinder.shadowfinder import ShadowFinder
+from shadowfinder import ShadowFinder
 
 
 def _validate_args(
