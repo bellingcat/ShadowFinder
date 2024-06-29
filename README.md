@@ -105,6 +105,9 @@ pip install poetry
 # Install dependencies
 poetry install
 
+# Setup pre-commit hooks
+pre-commit install
+
 # Run the tool
 poetry run shadowfinder --help
 
