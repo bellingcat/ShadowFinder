@@ -21,7 +21,7 @@ keywords=["shadow", "finder", "locator", "map"]
 "Bug Tracker" = "https://github.com/bellingcat/ShadowFinder/issues"
 
 [tool.poetry.scripts]
-shadowfinder = "shadowfinder:main_entrypoint"
+shadowfinder = "shadowfinder.__main__:main"
 
 [tool.poetry.dependencies]
 python =  ">=3.9,<3.13"

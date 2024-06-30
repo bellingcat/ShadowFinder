@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+dist/
 
 # Environments
 .env
@@ -11,6 +12,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.tox/
 
 # Output files
 *.png

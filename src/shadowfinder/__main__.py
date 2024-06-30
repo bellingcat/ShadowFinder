@@ -1,10 +1,10 @@
-from cli import ShadowFinderCli
+from . import ShadowFinderCli
 import fire
 
 
-def main_entrypoint():
+def main():
     fire.Fire(ShadowFinderCli)
 
 
 if __name__ == "__main__":
-    main_entrypoint()
+    main()
