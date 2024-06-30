@@ -2,6 +2,7 @@
 The tests in this file test that running shadowfinder as an executable behaves
 as expected.
 """
+
 import subprocess
 
 
@@ -26,7 +27,7 @@ COMMANDS
 """
 
     # WHEN
-    result = subprocess.run(['shadowfinder'], capture_output=True, text=True)
+    result = subprocess.run(["shadowfinder"], capture_output=True, text=True)
 
     # THEN
     assert result.returncode == 0
