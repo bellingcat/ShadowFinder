@@ -111,7 +111,10 @@ pre-commit install
 # Run the tool
 poetry run shadowfinder --help
 
-# After making changes, format your code with black:
-poetry run black ./
+# Run tests against your current Python interpreter
+poetry run pytest
+
+# Or, run pytest against all shadowfinder supported Python versions
+poetry run tox p  # p=run in parallel
 ```
 </details>
