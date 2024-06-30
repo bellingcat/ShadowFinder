@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  test:
+  pytest:
     runs-on: ubuntu-latest
 
     strategy:
@@ -31,5 +31,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox
 
-      - name: Run Tox
+      - name: Run Tests
         run: tox run -m ${{ matrix.python-version }}
