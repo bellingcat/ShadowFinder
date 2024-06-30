@@ -32,4 +32,4 @@ jobs:
           pip install tox
 
       - name: Run Tox
-        run: tox
+        run: tox run -m ${{ matrix.python-version }}
