@@ -16,3 +16,6 @@ venv.bak/
 *.png
 
 **/.DS_Store
+
+# IDE config
+.idea/

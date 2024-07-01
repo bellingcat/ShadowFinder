@@ -66,7 +66,7 @@ class ShadowFinder:
         # either height or angle must be set (but not both or neither)
         # fmt: off
         valid_input = (
-            ((object_height is None) == (shadow_length is None)) and 
+            ((object_height is None) == (shadow_length is None)) and
             ((object_height is None) or (sun_altitude_angle is None))
         )
         # fmt: on
