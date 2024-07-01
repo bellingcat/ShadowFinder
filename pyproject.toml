@@ -39,7 +39,6 @@ black = "^24.2.0"
 pre-commit = "^3.7.1"
 tox = "^4.15.1"
 
-
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
 
