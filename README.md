@@ -29,7 +29,7 @@ pip install shadowfinder
 If you want to use ShadowFinder directly from Python, the usage is as follows.
 
 ```python
-from shadowfinder.shadowfinder import ShadowFinder
+from shadowfinder import ShadowFinder
 
 finder = ShadowFinder()
 

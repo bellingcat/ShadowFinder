@@ -23,10 +23,3 @@ repos:
         language: system
         types: [yaml]
         files: ^pyproject\.toml$
-
-    -   id: poetry-export
-        name: poetry export
-        entry: poetry export --with=test -f requirements.txt -o requirements.tox.txt
-        language: system
-        types: [yaml]
-        files: ^pyproject\.toml$

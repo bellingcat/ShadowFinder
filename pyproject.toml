@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ShadowFinder"
-version = "0.3.1"
+version = "0.4.0"
 description = "Find possible locations of shadows."
 authors = ["Bellingcat"]
 license = "MIT License"
@@ -35,13 +35,11 @@ numpy = "^1"
 pytz = "^2024.1"
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.2.0"
+black = "24.2.0"
 pre-commit = "^3.7.1"
 tox = "^4.15.1"
-
-[tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
