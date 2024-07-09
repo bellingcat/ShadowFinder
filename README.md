@@ -29,7 +29,7 @@ pip install shadowfinder
 If you want to use ShadowFinder directly from Python, the usage is as follows.
 
 ```python
-from shadowfinder.shadowfinder import ShadowFinder
+from shadowfinder import ShadowFinder
 
 finder = ShadowFinder()
 
@@ -111,7 +111,10 @@ poetry run pre-commit install
 # Run the tool
 poetry run shadowfinder --help
 
-# After making changes, format your code with black:
-poetry run black ./
+# Run tests against your current Python interpreter
+poetry run pytest
+
+# Or, run pytest against all shadowfinder supported Python versions
+poetry run tox p  # p=run in parallel
 ```
 </details>
