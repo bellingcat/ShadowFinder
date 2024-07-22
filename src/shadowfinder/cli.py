@@ -41,6 +41,7 @@ class ShadowFinderCli:
         date: str,
         time: str,
         time_format: str = "utc",
+        grid: str = "timezone_grid.json",
     ) -> None:
         """
         Find the shadow length of an object given its height and the date and time.
@@ -59,7 +60,7 @@ class ShadowFinderCli:
         shadow_finder = ShadowFinder(
             object_height, shadow_length, date_time, time_format
         )
-        shadow_finder.quick_find()
+        shadow_finder.quick_find(grid)
 
     @staticmethod
     def find_sun(
@@ -87,3 +88,16 @@ class ShadowFinderCli:
             sun_altitude_angle=sun_altitude_angle,
         )
         shadow_finder.quick_find()
+
+    @staticmethod
+    def generate_timezone_grid(
+        grid: str = "timezone_grid.json",
+    ) -> None:
+        """
+        Generate a timezone grid file.
+        :param grid: File path to save the timezone grid.
+        """
+
+        shadow_finder = ShadowFinder()
+        shadow_finder.generate_timezone_grid()
+        shadow_finder.save_timezone_grid(grid)
