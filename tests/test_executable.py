@@ -24,6 +24,9 @@ COMMANDS
 
      find_sun
        Locate a shadow based on the solar altitude angle and the date and time.
+
+     generate_timezone_grid
+       Generate a timezone grid file.
 """
 
     # WHEN
