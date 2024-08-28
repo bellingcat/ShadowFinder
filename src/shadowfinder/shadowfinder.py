@@ -93,8 +93,13 @@ class ShadowFinder:
             # Lengths and angle are None and we use the same values as before
             pass
 
-    def quick_find(self):
-        self.generate_timezone_grid()
+    def quick_find(self, timezone_grid="timezone_grid.json"):
+        # try to load timezone grid from file, generate if not found
+        try:
+            self.load_timezone_grid(timezone_grid)
+        except FileNotFoundError:
+            self.generate_timezone_grid()
+
         self.find_shadows()
         fig = self.plot_shadows()
 
