@@ -22,6 +22,10 @@ class ShadowFinder:
         time_format="utc",
         sun_altitude_angle=None,
     ):
+        self.sun_altitude_angle = None
+        self.object_height = None
+        self.shadow_length = None
+
         self.set_details(
             date_time, object_height, shadow_length, time_format, sun_altitude_angle
         )
@@ -272,7 +276,9 @@ class ShadowFinder:
         )
         timestamp = timestamp if timestamp else self.date_time
         location_likelihoods = (
-            location_likelihoods if location_likelihoods else self.location_likelihoods
+            location_likelihoods
+            if isinstance(location_likelihoods, np.ndarray)
+            else self.location_likelihoods
         )
         plt_title = plt_title if plt_title else None
 
