@@ -160,24 +160,9 @@ class ShadowFinder:
         self.lons, self.lats = np.meshgrid(lons, lats)
         self.timezones = np.array(data["timezones"])
 
-    def find_shadows(
-        self,
-        object_height: float = None,
-        shadow_length: float = None,
-        sun_altitude_angle: float = None,
-        timestamp: datetime.datetime = None,
-    ) -> np.ndarray:
-        # Evaluate the sun's length at a grid of points on the Earth's surface
+    def generate_valid_datetimes_lats_lons_and_mask(self, timestamp):
 
-        object_height = object_height if object_height else self.object_height
-        shadow_length = shadow_length if shadow_length else self.shadow_length
-        sun_altitude_angle = (
-            sun_altitude_angle if sun_altitude_angle else self.sun_altitude_angle
-        )
-        timestamp = timestamp if timestamp else self.date_time
-        if self.lats is None or self.lons is None or self.timezones is None:
-            self.generate_timezone_grid()
-
+        mask = None
         if self.time_format == "utc":
             valid_datetimes = utc.localize(timestamp)
             valid_lats = self.lats.flatten()
@@ -208,6 +193,29 @@ class ShadowFinder:
             # Convert the datetimes to pandas series of timestamps
             valid_datetimes = pd.to_datetime(valid_datetimes, unit="s", utc=True)
 
+        return valid_datetimes, valid_lons, valid_lats, mask
+
+    def find_shadows(
+        self,
+        object_height: float = None,
+        shadow_length: float = None,
+        sun_altitude_angle: float = None,
+        timestamp: datetime.datetime = None,
+    ) -> np.ndarray:
+        # Evaluate the sun's length at a grid of points on the Earth's surface
+
+        object_height = object_height if object_height else self.object_height
+        shadow_length = shadow_length if shadow_length else self.shadow_length
+        sun_altitude_angle = (
+            sun_altitude_angle if sun_altitude_angle else self.sun_altitude_angle
+        )
+        timestamp = timestamp if timestamp else self.date_time
+        if self.lats is None or self.lons is None or self.timezones is None:
+            self.generate_timezone_grid()
+
+        valid_datetimes, valid_lons, valid_lats, mask = (
+            self.generate_valid_datetimes_lats_lons_and_mask(timestamp=timestamp)
+        )
         pos_obj = get_position(valid_datetimes, valid_lons, valid_lats)
 
         valid_sun_altitudes = pos_obj["altitude"]  # in radians
@@ -258,29 +266,39 @@ class ShadowFinder:
         )
         return self.location_likelihoods
 
+    def get_plot_data(self, data: dict):
+        object_height = data.get("object_height", self.object_height)
+        shadow_length = data.get("shadow_length", self.shadow_length)
+        sun_altitude_angle = data.get("sun_altitude_angle", self.sun_altitude_angle)
+        timestamp = data.get("timestamp", self.date_time)
+        location_likelihoods = data.get(
+            "location_likelihoods", self.location_likelihoods
+        )
+        plt_title = data.get("plt_title", None)
+        return (
+            object_height,
+            shadow_length,
+            sun_altitude_angle,
+            timestamp,
+            location_likelihoods,
+            plt_title,
+        )
+
     def plot_shadows(
         self,
         figure_args={"figsize": (12, 6)},
         basemap_args={"projection": "cyl", "resolution": "c"},
-        object_height: float = None,
-        shadow_length: float = None,
-        sun_altitude_angle: float = None,
-        timestamp: datetime.datetime = None,
-        location_likelihoods: np.ndarray = None,
-        plt_title: str = None,
+        plot_data: dict = None,
     ) -> Figure:
-        object_height = object_height if object_height else self.object_height
-        shadow_length = shadow_length if shadow_length else self.shadow_length
-        sun_altitude_angle = (
-            sun_altitude_angle if sun_altitude_angle else self.sun_altitude_angle
-        )
-        timestamp = timestamp if timestamp else self.date_time
-        location_likelihoods = (
-            location_likelihoods
-            if isinstance(location_likelihoods, np.ndarray)
-            else self.location_likelihoods
-        )
-        plt_title = plt_title if plt_title else None
+        plot_data = plot_data if plot_data else {}
+        (
+            object_height,
+            shadow_length,
+            sun_altitude_angle,
+            timestamp,
+            location_likelihoods,
+            plt_title,
+        ) = self.get_plot_data(data=plot_data)
 
         fig = plt.figure(**figure_args)
 
@@ -324,7 +342,9 @@ class ShadowFinder:
         timestamps: list[datetime.datetime],
     ) -> Figure:
         """
-        The plot title string assumes the timestamps are ordered ascending;
+        Find possible locations using multiple shadows as input.
+
+        If the same object is used every time, the object height can be provided as a list with a single value
         """
         if len(shadow_lengths) != len(timestamps):
             raise ValueError(
@@ -337,35 +357,36 @@ class ShadowFinder:
                 raise ValueError(
                     f"object_heights must be a list of the same length as the shadow lengths and timestamps, or contain only 1 value"
                 )
+        if self.lats is None or self.lons is None or self.timezones is None:
+            self.generate_timezone_grid()
 
-        list_location_likelihoods = [
-            self.find_shadows(
+        arr_location_likelihoods = np.zeros(
+            (len(timestamps), self.lons.shape[0], self.lons.shape[1])
+        )
+        for k, (obj_height, shadow_length, timestamp) in enumerate(
+            zip(object_heights, shadow_lengths, timestamps)
+        ):
+            arr_location_likelihoods[k, :, :] = self.find_shadows(
                 object_height=obj_height,
                 shadow_length=shadow_length,
                 timestamp=timestamp,
             )
-            for obj_height, shadow_length, timestamp in zip(
-                object_heights, shadow_lengths, timestamps
-            )
-        ]
 
-        # merge location_likelihoods: strict "AND" operation?
-        location_likelihoods = list_location_likelihoods[0]
-        max_val_for_rescaling = np.amax(location_likelihoods)
-        for loc_likelihoods in list_location_likelihoods:
-            max_val_for_rescaling = max(np.amax(loc_likelihoods), max_val_for_rescaling)
-            location_likelihoods = np.multiply(location_likelihoods, loc_likelihoods)
+        # merge/logic for combining the shadows. #TODO
+        location_likelihoods = np.max(arr_location_likelihoods, axis=0)
 
-        # rescale for plotting
-        cur_max = np.amax(location_likelihoods)
-        if cur_max > 0:
-            location_likelihoods = location_likelihoods * (
-                max_val_for_rescaling / cur_max
-            )
+        plt_title = f"Possible Locations for measurements at ["
+        for ts in timestamps:
+            plt_title += f"{ts.strftime('%Y-%m-%d %H:%M:%S')}, "
+        plt_title = plt_title[:-2] + f"] ({self.time_format.title()}\n)"
 
-        plt_title = f"Possible Locations for measurements between {timestamps[0].strftime('%Y-%m-%d %H:%M:%S')} and {timestamps[-1].strftime('%Y-%m-%d %H:%M:%S')} {self.time_format.title()}\n)"
-        fig = self.plot_shadows(
-            location_likelihoods=location_likelihoods, plt_title=plt_title
-        )
+        plot_data = {
+            "location_likelihoods": location_likelihoods,
+            "plt_title": plt_title,
+            "timestamps": timestamps,
+            "object_heights": object_heights,
+            "shadow_lengths": shadow_lengths,
+        }
+        fig = self.plot_shadows(plot_data=plot_data)
 
         return fig

@@ -18,8 +18,7 @@ def test_creation_with_valid_arguments_should_pass():
     )
 
 def test_find_multiple_shadows():
-    """Baseline test to assert that we can create an instance of ShadowFinder with only object height, shadow length,
-    and a datetime object."""
+    """Test find_multiple_shadows"""
     # GIVEN
     object_heights = [6,6,6,6]
     shadow_lengths = [3.2,3.0,2.9,2.8]
