@@ -1,14 +1,17 @@
-from pytz import timezone, utc
-import pandas as pd
-from suncalc import get_position
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-from mpl_toolkits.basemap import Basemap
-from timezonefinder import TimezoneFinder
 import json
-from warnings import warn
+import multiprocessing
+import matplotlib.colors as colors
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from joblib import Parallel, delayed
+from functools import reduce
 from math import radians
+from warnings import warn
+from mpl_toolkits.basemap import Basemap
+from pytz import timezone, utc
+from suncalc import get_position
+from timezonefinder import TimezoneFinder
 
 
 class ShadowFinder:
@@ -278,3 +281,57 @@ class ShadowFinder:
         plt.title(plt_title)
         self.fig = fig
         return fig
+
+def normalize_product(outputs):
+    """
+    Normalize the product of all sets in the list of outputs.
+
+    Args:
+        outputs (list): List of location_likelihoods from ShadowFinder instances.
+
+    Returns:
+        np.ndarray: Normalized product of all sets.
+    """
+    product = reduce(lambda x, y: x * y, outputs)
+    normalized_product = product / np.linalg.norm(product)
+    return normalized_product
+
+def plot_multi_shadows(normalized_output):
+    """
+    Plot the output of the multi_shadow_find function.
+
+    Args:
+        normalized_output (np.ndarray): Normalized product of all sets.
+    """
+    # Assuming plot_shadows is a predefined function
+    plot_shadows(normalized_output)
+
+def multi_shadow_find(dict_list, num_cores):
+    """
+    Perform shadow finding in parallel across multiple cores.
+
+    Args:
+        dict_list (list): List of dictionaries with kwargs for ShadowFinder.
+        num_cores (int): Number of cores to parallelize the process.
+
+    Returns:
+        np.ndarray: Normalized product of all location_likelihoods.
+    """
+    # Instantiate ShadowFinder and save timezone grid
+    sf = ShadowFinder()
+    sf.save_timezone_grid()
+
+    # Function to process each dictionary
+    def process_dict(d):
+        sf_instance = ShadowFinder(**d)
+        sf_instance.find_shadows()
+        return sf_instance.location_likelihoods
+
+    # Parallelize the process
+    with multiprocessing.Pool(num_cores) as pool:
+        location_likelihoods_list = pool.map(process_dict, dict_list)
+
+    # Normalize the product of all location_likelihoods
+    normalized_output = normalize_product(location_likelihoods_list)
+
+    return normalized_output
