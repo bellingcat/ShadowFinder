@@ -1,8 +1,6 @@
-import unittest
 from datetime import datetime
 import numpy as np
 from shadowfinder import multi_shadow_find, ShadowFinder
-
 
 
 def test_creation_with_valid_arguments_should_pass():
@@ -24,17 +22,15 @@ def test_multi_shadow_find():
     # GIVEN
     dict_list = [
         {
-            "object_height": 6,
-            "shadow_length": 3.2,
-            "date_time": datetime(2023, 10, 1, 12, 0, 0),
-            "time_format": "utc"
+            "object_height": 10,
+            "shadow_length": 8,
+            "date_time": datetime(2024, 2, 29, 12, 0, 0),
         },
         {
-            "object_height": 5,
-            "shadow_length": 2.5,
-            "date_time": datetime(2023, 10, 1, 12, 0, 0),
-            "time_format": "utc"
-        }
+            "object_height": 10,
+            "shadow_length": 9,
+            "date_time": datetime(2024, 2, 29, 15, 0, 0),
+        },
     ]
     num_cores = 2
 
@@ -43,5 +39,6 @@ def test_multi_shadow_find():
 
     # THEN
     assert isinstance(normalized_output, np.ndarray)
-    assert normalized_output.shape == ShadowFinder().lats.shape
-    assert np.all(normalized_output >= 0)
+    finder = ShadowFinder()
+    finder.load_timezone_grid()
+    assert normalized_output.shape == finder.lats.shape

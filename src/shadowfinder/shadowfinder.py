@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
+import numpy.linalg as linalg
 from functools import reduce
 from math import radians
 from warnings import warn
@@ -241,12 +242,7 @@ class ShadowFinder:
             self.location_likelihoods, np.shape(self.lons), order="A"
         )
 
-    def plot_shadows(
-        self,
-        figure_args={"figsize": (12, 6)},
-        basemap_args={"projection": "cyl", "resolution": "c"},
-    ):
-
+    def _plot_shadows(self, figure_args, basemap_args):
         fig = plt.figure(**figure_args)
 
         # Add a simple map of the Earth
@@ -271,7 +267,14 @@ class ShadowFinder:
             alpha=0.7,
         )
 
-        # plt.colorbar(label='Relative Shadow Length Difference')
+        return fig
+
+    def plot_shadows(
+        self,
+        figure_args={"figsize": (12, 6)},
+        basemap_args={"projection": "cyl", "resolution": "c"},
+    ):
+        fig = self._plot_shadows(figure_args, basemap_args)
 
         if self.sun_altitude_angle is not None:
             plt_title = f"Possible Locations at {self.date_time.strftime('%Y-%m-%d %H:%M:%S')} {self.time_format.title()}\n(sun altitude angle: {self.sun_altitude_angle})"
@@ -282,31 +285,77 @@ class ShadowFinder:
         self.fig = fig
         return fig
 
-def normalize_product(outputs):
+
+def scaled_elementwise_product(arrays_list):
     """
-    Normalize the product of all sets in the list of outputs.
+    Multiply corresponding elements across all matrices in the list, normalize the result, and scale it.
 
     Args:
-        outputs (list): List of location_likelihoods from ShadowFinder instances.
+        arrays_list (list): List of 2D NumPy arrays (matrices) with the same dimensions.
 
     Returns:
-        np.ndarray: Normalized product of all sets.
+        np.ndarray: Scaled and normalized product of all corresponding elements.
     """
-    product = reduce(lambda x, y: x * y, outputs)
-    normalized_product = product / np.linalg.norm(product)
-    return normalized_product
+    # Replace np.nan values with 0s in each array
+    arrays_list = [np.nan_to_num(array, nan=0.0) for array in arrays_list]
 
-def plot_multi_shadows(normalized_output):
+    # Stack the list of arrays into a single 3D array
+    stacked_arrays = np.stack(arrays_list)
+
+    # Multiply corresponding elements across all matrices
+    product_array = np.prod(stacked_arrays, axis=0)
+
+    # Replace 0s with np.nan in the final output
+    product_array[product_array == 0] = np.nan
+
+    # Scale the product array
+    scaled_array = np.sqrt(product_array)
+
+    return scaled_array
+
+
+def plot_multi_shadows(
+    normalized_output,
+    figure_args={"figsize": (12, 6)},
+    basemap_args={"projection": "cyl", "resolution": "c"},
+):
     """
     Plot the output of the multi_shadow_find function.
 
     Args:
         normalized_output (np.ndarray): Normalized product of all sets.
+        figure_args (dict): Arguments for the figure.
+        basemap_args (dict): Arguments for the basemap.
     """
-    # Assuming plot_shadows is a predefined function
-    plot_shadows(normalized_output)
+    finder = ShadowFinder()
+    finder.generate_timezone_grid()  # Ensure lons and lats are initialized
+    finder.location_likelihoods = normalized_output
+    finder.sun_altitude_angle = None
+    fig = finder._plot_shadows(figure_args=figure_args, basemap_args=basemap_args)
+    return fig
 
-def multi_shadow_find(dict_list, num_cores):
+
+def process_dict(d, finder: ShadowFinder, time_format: str = "utc"):
+    """
+    Process a dictionary to find shadows and return location_likelihoods.
+
+    Args:
+        d (dict): Dictionary with kwargs for ShadowFinder.
+
+    Returns:
+        np.ndarray: location_likelihoods from ShadowFinder instance.
+    """
+    finder.set_details(
+        date_time=d["date_time"],
+        object_height=d["object_height"],
+        shadow_length=d["shadow_length"],
+        time_format=time_format,
+    )
+    finder.find_shadows()
+    return finder.location_likelihoods
+
+
+def multi_shadow_find(dict_list: list, num_cores: int = 1, time_format: str = "utc"):
     """
     Perform shadow finding in parallel across multiple cores.
 
@@ -317,21 +366,16 @@ def multi_shadow_find(dict_list, num_cores):
     Returns:
         np.ndarray: Normalized product of all location_likelihoods.
     """
-    # Instantiate ShadowFinder and save timezone grid
-    sf = ShadowFinder()
-    sf.save_timezone_grid()
-
-    # Function to process each dictionary
-    def process_dict(d):
-        sf_instance = ShadowFinder(**d)
-        sf_instance.find_shadows()
-        return sf_instance.location_likelihoods
-
+    finder = ShadowFinder()
+    try:
+        finder.load_timezone_grid()
+    except FileNotFoundError:
+        finder.generate_timezone_grid()
+        finder.save_timezone_grid()
     # Parallelize the process
     with multiprocessing.Pool(num_cores) as pool:
-        location_likelihoods_list = pool.map(process_dict, dict_list)
-
-    # Normalize the product of all location_likelihoods
-    normalized_output = normalize_product(location_likelihoods_list)
-
+        location_likelihoods_list = pool.starmap(
+            process_dict, [(d, finder, time_format) for d in dict_list]
+        )
+    normalized_output = scaled_elementwise_product(location_likelihoods_list)
     return normalized_output
