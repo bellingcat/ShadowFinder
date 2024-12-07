@@ -286,7 +286,7 @@ class ShadowFinder:
         return fig
 
 
-def scaled_elementwise_product(arrays_list):
+def _scaled_elementwise_product(arrays_list):
     """
     Multiply corresponding elements across all matrices in the list, normalize the result, and scale it.
 
@@ -335,7 +335,7 @@ def plot_multi_shadows(
     return fig
 
 
-def process_dict(d, finder: ShadowFinder, time_format: str = "utc"):
+def _process_dict(d, finder: ShadowFinder, time_format: str = "utc"):
     """
     Process a dictionary to find shadows and return location_likelihoods.
 
@@ -375,7 +375,7 @@ def multi_shadow_find(dict_list: list, num_cores: int = 1, time_format: str = "u
     # Parallelize the process
     with multiprocessing.Pool(num_cores) as pool:
         location_likelihoods_list = pool.starmap(
-            process_dict, [(d, finder, time_format) for d in dict_list]
+            _process_dict, [(d, finder, time_format) for d in dict_list]
         )
-    normalized_output = scaled_elementwise_product(location_likelihoods_list)
+    normalized_output = _scaled_elementwise_product(location_likelihoods_list)
     return normalized_output
