@@ -288,13 +288,14 @@ class ShadowFinder:
 
 def _scaled_elementwise_product(arrays_list):
     """
-    Multiply corresponding elements across all matrices in the list, normalize the result, and scale it.
+    Multiply corresponding elements across all matrices in the list,
+    n-root scale the result where n is the number of shadows.
 
     Args:
         arrays_list (list): List of 2D NumPy arrays (matrices) with the same dimensions.
 
     Returns:
-        np.ndarray: Scaled and normalized product of all corresponding elements.
+        np.ndarray: Scaled element-wise product of all corresponding elements.
     """
     # Replace np.nan values with 0s in each array
     arrays_list = [np.nan_to_num(array, nan=0.0) for array in arrays_list]
@@ -308,9 +309,15 @@ def _scaled_elementwise_product(arrays_list):
     # Replace 0s with np.nan in the final output
     product_array[product_array == 0] = np.nan
 
-    # Scale the product array
-    scaled_array = np.sqrt(product_array)
+    # Set negative values to 0 to avoid invalid values in the n-root scaling.
+    product_array = np.where(product_array < 0, 0, product_array)
 
+    # n-root scaling
+    n = len(arrays_list)
+    scaled_array = np.power(product_array, 1 / n)
+
+    # set the 0 values (meaning no chance the shadow is located here) to -1 to plot them as dark
+    scaled_array[scaled_array == 0] = -1
     return scaled_array
 
 
@@ -329,8 +336,9 @@ def plot_multi_shadows(
     """
     finder = ShadowFinder()
     finder.generate_timezone_grid()  # Ensure lons and lats are initialized
+    # directly set the location_likelihoods without running find_shadows
     finder.location_likelihoods = normalized_output
-    finder.sun_altitude_angle = None
+    finder.sun_altitude_angle = None  # avoids no property error TODO: fix this
     fig = finder._plot_shadows(figure_args=figure_args, basemap_args=basemap_args)
     return fig
 
@@ -357,10 +365,13 @@ def _process_dict(d, finder: ShadowFinder, time_format: str = "utc"):
 
 def multi_shadow_find(dict_list: list, num_cores: int = 1, time_format: str = "utc"):
     """
-    Perform shadow finding in parallel across multiple cores.
+    Given a list of dicts which contains the kwargs for a ShadowFinder instance,
+    calculates the location likelihoods given multiple shadows at the same location
+    across different times. Can run in parallel.
 
     Args:
         dict_list (list): List of dictionaries with kwargs for ShadowFinder.
+            ie. [{"object_height": 10, "shadow_length": 8, "date_time": datetime(2024, 2, 29, 12, 0, 0)}, ...]
         num_cores (int): Number of cores to parallelize the process.
 
     Returns:
