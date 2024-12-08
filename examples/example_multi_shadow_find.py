@@ -9,20 +9,17 @@ def main():
         "object_height": 10,
         "shadow_length": 8,
         "date_time": datetime(2024, 2, 29, 12, 0, 0),
-        "time_format": "local",
     }
     shadow_B = {
         "object_height": 10,
         "shadow_length": 8.5,
         "date_time": datetime(2024, 2, 29, 13, 0, 0),
-        "time_format": "local",
     }
 
     shadow_C = {
         "object_height": 10,
         "shadow_length": 9,
         "date_time": datetime(2024, 2, 29, 15, 0, 0),
-        "time_format": "local",
     }
 
     finder = ShadowFinder()
@@ -33,15 +30,15 @@ def main():
         finder.generate_timezone_grid()
         finder.save_timezone_grid()
 
-    finder.set_details(**shadow_A)
+    finder.set_details(**shadow_A, time_format="local")
     finder.find_shadows()
     fig_A = finder.plot_shadows()
 
-    finder.set_details(**shadow_B)
+    finder.set_details(**shadow_B, time_format="local")
     finder.find_shadows()
     fig_B = finder.plot_shadows()
 
-    finder.set_details(**shadow_C)
+    finder.set_details(**shadow_C, time_format="local")
     finder.find_shadows()
     fig_C = finder.plot_shadows()
 
