@@ -33,12 +33,13 @@ timezonefinder = "^6.5"
 pandas = "^2.2"
 numpy = "^1"
 pytz = "^2024.1"
+joblib = "^1.3.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "24.2.0"
-pre-commit = "^3.7.1"
 tox = "^4.15.1"
 pytest = "^8.2.2"
+pre-commit = "^3.7.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
