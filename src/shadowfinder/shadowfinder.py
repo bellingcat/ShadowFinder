@@ -255,7 +255,24 @@ class ShadowFinder:
         x, y = m(self.lons, self.lats)
 
         # Set the a color scale and only show the values between 0 and 0.2
-        cmap = plt.cm.get_cmap("inferno_r")
+
+        # Create a custom LinearSegmented colormap
+        cmap = colors.LinearSegmentedColormap.from_list(
+            "custom_cmap",
+            [
+                # 0 is the peak likelihood, 1 is the low likelihood
+                (0, (1, 1, 0.75, 1)),  # Light Yellow - peak likelihood
+                (0.05, (1, 1, 0, 1)),  # Yellow - high likelihood
+                (0.2, (1, 0.5, 0, 1)),  # Orange - low likelihood
+                (1, (1, 0, 0, 0)),  # Transparent Red - no likelihood
+            ],
+            N=256,
+        )
+
+        # Override the edge value of the cmap
+        cmap.set_over("white", alpha=0.5)  # Day time colour
+        cmap.set_under("black", alpha=0.5)  # Night time colour
+
         norm = colors.BoundaryNorm(np.arange(0, 0.2, 0.02), cmap.N)
 
         # Plot the data
