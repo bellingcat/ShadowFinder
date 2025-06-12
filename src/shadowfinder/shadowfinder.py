@@ -6,9 +6,10 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from cartopy.io import DownloadWarning
 from timezonefinder import TimezoneFinder
 import json
-from warnings import warn
+from warnings import warn, filterwarnings
 from math import radians
 
 
@@ -270,6 +271,7 @@ class ShadowFinder:
         norm = colors.BoundaryNorm(np.arange(0, 0.2, 0.02), cmap.N)
 
         # Create the map projection
+        filterwarnings("ignore", category=DownloadWarning)
         ax = plt.axes(projection=getattr(ccrs, projection)(**projection_args))
         ax.add_feature(cfeature.COASTLINE)
         ax.add_feature(
