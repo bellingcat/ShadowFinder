@@ -8,7 +8,7 @@ A lightweight tool and Google Colab notebook for estimating the points on the Ea
 
 Using an object's height, the length of its shadow, the date and the time, ShadowFinder estimates the possible locations where that shadow could occur. These possible locations are shown as a bright band on a map of the Earth:
 
-![ExampleShadowFinderOutput](https://github.com/bellingcat/ShadowFinder/assets/54807169/391c9b54-d5b4-463f-9c09-94ff1fec6ee4)
+![ExampleShadowFinderOutput](https://github.com/user-attachments/assets/1620de90-3544-4678-856a-9ac5a56655a4)
 
 
 ## Usage - Google Colab Notebook 🚀
