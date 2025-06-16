@@ -4,10 +4,12 @@ from suncalc import get_position
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-from mpl_toolkits.basemap import Basemap
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+from cartopy.io import DownloadWarning
 from timezonefinder import TimezoneFinder
 import json
-from warnings import warn
+from warnings import warn, filterwarnings
 from math import radians
 
 
@@ -241,34 +243,53 @@ class ShadowFinder:
     def plot_shadows(
         self,
         figure_args={"figsize": (12, 6)},
-        basemap_args={"projection": "cyl", "resolution": "c"},
+        projection="PlateCarree",
+        projection_args={},
     ):
 
         fig = plt.figure(**figure_args)
 
-        # Add a simple map of the Earth
-        m = Basemap(**basemap_args)
-        m.drawcoastlines()
-        m.drawcountries()
-
-        # Deal with the map projection
-        x, y = m(self.lons, self.lats)
-
         # Set the a color scale and only show the values between 0 and 0.2
-        cmap = plt.cm.get_cmap("inferno_r")
-        norm = colors.BoundaryNorm(np.arange(0, 0.2, 0.02), cmap.N)
 
-        # Plot the data
-        m.pcolormesh(
-            x,
-            y,
-            np.abs(self.location_likelihoods),
-            cmap=cmap,
-            norm=norm,
-            alpha=0.7,
+        # Create a custom LinearSegmented colormap
+        cmap = colors.LinearSegmentedColormap.from_list(
+            "custom_cmap",
+            [
+                # 0 is the peak likelihood, 1 is the low likelihood
+                (0, (1, 1, 0.75, 1)),  # Light Yellow - peak likelihood
+                (0.05, (1, 1, 0, 1)),  # Yellow - high likelihood
+                (0.2, (1, 0.5, 0, 1)),  # Orange - low likelihood
+                (1, (1, 0, 0, 0)),  # Transparent Red - no likelihood
+            ],
+            N=256,
         )
 
-        # plt.colorbar(label='Relative Shadow Length Difference')
+        # Override the edge value of the cmap
+        cmap.set_over("white", alpha=0.5)  # Day time colour
+        cmap.set_under("black", alpha=0.5)  # Night time colour
+
+        norm = colors.BoundaryNorm(np.arange(0, 0.2, 0.02), cmap.N)
+
+        # Create the map projection
+        filterwarnings("ignore", category=DownloadWarning)
+        ax = plt.axes(projection=getattr(ccrs, projection)(**projection_args))
+        ax.add_feature(cfeature.COASTLINE)
+        ax.add_feature(
+            cfeature.BORDERS, linestyle="-", edgecolor="black", linewidth=0.5
+        )
+
+        # replace NaN values with a specific value (e.g. -1)
+        surface = np.abs(self.location_likelihoods)
+        surface = np.where(np.isnan(surface), -1, surface)
+
+        ax.pcolormesh(
+            self.lons,
+            self.lats,
+            surface,
+            cmap=cmap,
+            norm=norm,
+            transform=ccrs.PlateCarree(),
+        )
 
         if self.sun_altitude_angle is not None:
             plt_title = f"Possible Locations at {self.date_time.strftime('%Y-%m-%d %H:%M:%S')} {self.time_format.title()}\n(sun altitude angle: {self.sun_altitude_angle})"
