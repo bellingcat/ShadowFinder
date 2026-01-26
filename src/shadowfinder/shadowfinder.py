@@ -191,7 +191,7 @@ class ShadowFinder:
 
         pos_obj = get_position(valid_datetimes, valid_lons, valid_lats)
 
-        valid_sun_altitudes = pos_obj["altitude"]  # in radians
+        valid_sun_altitudes = np.array(pos_obj["altitude"])  # in radians
 
         # If object height and shadow length are set the sun altitudes are used
         #  to calculate the shadow lengths across the world and then compared to
