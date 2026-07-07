@@ -76,8 +76,8 @@ class ShadowFinder:
         self.date_time = date_time
 
         # Optional measurement/time uncertainties. When any are set, find_shadows
-        # propagates them into a per-cell uncertainty band (self.location_sigmas)
-        # instead of using the fixed default band width.
+        # propagates them into a per-cell consistency surface
+        # (self.location_uncertainty) instead of using the fixed default band.
         self.object_height_uncertainty = object_height_uncertainty
         self.shadow_length_uncertainty = shadow_length_uncertainty
         self.sun_altitude_angle_uncertainty = sun_altitude_angle_uncertainty
@@ -295,6 +295,11 @@ class ShadowFinder:
             # difference at each cell then spans a range rather than a single
             # value, evaluated with two extra global computations at t +/- dt
             # rather than re-meshing the whole globe over many moments (issue #4).
+            # The 3-sample min/max is an approximation: for a cell whose local
+            # solar noon falls inside the window the true extremum is interior,
+            # but there the shadow barely moves, so the bracket stays tight
+            # exactly where the candidate band is, and only under-covers on the
+            # fast-moving low-sun cells that are excluded regardless.
             r_minus = relative_difference_at(-seconds)
             r_plus = relative_difference_at(seconds)
             lower_difference = np.fmin(np.fmin(r_minus, location_likelihoods), r_plus)
@@ -307,8 +312,12 @@ class ShadowFinder:
             # Widen the plausible range by the measurement band (issue #3), then
             # measure how far a perfect match (0) sits outside that range. Cells
             # whose range spans 0 are consistent with the observation (0 here).
-            lower_bound = lower_difference - measurement_sigma
-            upper_bound = upper_difference + measurement_sigma
+            # The band on a relative difference r is (1 + r) * measurement_sigma:
+            # the measurement uncertainty scales with the predicted-to-observed
+            # ratio (1 + r), so the band is exact to first order everywhere, not
+            # just at the match. This applies identically in sun-altitude mode.
+            lower_bound = lower_difference - (1 + lower_difference) * measurement_sigma
+            upper_bound = upper_difference + (1 + upper_difference) * measurement_sigma
             gap = np.where(
                 lower_bound > 0,
                 lower_bound,

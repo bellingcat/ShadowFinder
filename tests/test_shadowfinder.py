@@ -63,9 +63,10 @@ def test_no_uncertainty_leaves_uncertainty_none():
 
 
 def test_measurement_uncertainty_matches_propagation():
-    """Measurement uncertainties widen the consistent region by the propagated
-    relative error sqrt((dh/h)^2 + (ds/s)^2): the consistency surface is the
-    distance of the relative difference beyond that band."""
+    """Measurement uncertainties widen the consistent region by the first-order
+    propagated error (1 + r) * sqrt((dh/h)^2 + (ds/s)^2), where r is the cell's
+    relative difference; the consistency surface is the distance of a perfect
+    match (0) beyond that band."""
     # GIVEN height 10 +/- 1 and shadow 5 +/- 0.5
     finder = _utc_finder(object_height_uncertainty=1, shadow_length_uncertainty=0.5)
 
@@ -76,7 +77,10 @@ def test_measurement_uncertainty_matches_propagation():
     sigma = np.sqrt((1 / 10) ** 2 + (0.5 / 5) ** 2)
     assert finder.location_uncertainty is not None
     finite = ~np.isnan(finder.location_likelihoods)
-    expected = np.maximum(np.abs(finder.location_likelihoods[finite]) - sigma, 0)
+    r = finder.location_likelihoods[finite]
+    lower = r - (1 + r) * sigma
+    upper = r + (1 + r) * sigma
+    expected = np.where(lower > 0, lower, np.where(upper < 0, -upper, 0.0))
     assert np.allclose(finder.location_uncertainty[finite], expected)
 
 
