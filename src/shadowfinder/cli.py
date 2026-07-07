@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from shadowfinder import ShadowFinder
 
@@ -42,6 +43,7 @@ class ShadowFinderCli:
         time: str,
         time_format: str = "utc",
         grid: str = "timezone_grid.json",
+        timezone: Optional[str] = None,
     ) -> None:
         """
         Find the shadow length of an object given its height and the date and time.
@@ -49,6 +51,8 @@ class ShadowFinderCli:
         :param shadow_length: Length of the shadow in arbitrary units
         :param date: Date in the format YYYY-MM-DD
         :param time: UTC Time in the format HH:MM:SS
+        :param timezone: Optional known IANA timezone (e.g. "Europe/Kyiv") used to
+            mask out candidate locations in other timezones.
         """
 
         try:
@@ -58,7 +62,7 @@ class ShadowFinderCli:
         _validate_args(object_height, shadow_length, date_time)
 
         shadow_finder = ShadowFinder(
-            object_height, shadow_length, date_time, time_format
+            object_height, shadow_length, date_time, time_format, timezone=timezone
         )
         shadow_finder.quick_find(grid)
 
@@ -69,12 +73,15 @@ class ShadowFinderCli:
         time: str,
         time_format: str = "utc",
         grid: str = "timezene_grid.json",
+        timezone: Optional[str] = None,
     ) -> None:
         """
         Locate a shadow based on the solar altitude angle and the date and time.
         :param sun_altitude_angle: Sun altitude angle in degrees
         :param date: Date in the format YYYY-MM-DD
         :param time: UTC Time in the format HH:MM:SS
+        :param timezone: Optional known IANA timezone (e.g. "Europe/Kyiv") used to
+            mask out candidate locations in other timezones.
         """
 
         try:
@@ -87,6 +94,7 @@ class ShadowFinderCli:
             date_time=date_time,
             time_format=time_format,
             sun_altitude_angle=sun_altitude_angle,
+            timezone=timezone,
         )
         shadow_finder.quick_find(grid)
 

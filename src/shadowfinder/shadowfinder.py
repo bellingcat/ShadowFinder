@@ -21,9 +21,15 @@ class ShadowFinder:
         date_time=None,
         time_format="utc",
         sun_altitude_angle=None,
+        timezone=None,
     ):
         self.set_details(
-            date_time, object_height, shadow_length, time_format, sun_altitude_angle
+            date_time,
+            object_height,
+            shadow_length,
+            time_format,
+            sun_altitude_angle,
+            timezone,
         )
 
         self.lats = None
@@ -48,6 +54,7 @@ class ShadowFinder:
         shadow_length=None,
         time_format=None,
         sun_altitude_angle=None,
+        timezone=None,
     ):
 
         if date_time is not None and date_time.tzinfo is not None:
@@ -56,6 +63,10 @@ class ShadowFinder:
             )
             date_time = date_time.replace(tzinfo=None)
         self.date_time = date_time
+
+        # An optional known IANA timezone name (e.g. "Europe/Kyiv"). When set,
+        # find_shadows masks out candidate cells in every other timezone.
+        self.timezone = timezone
 
         if time_format is not None:
             assert time_format in [
@@ -159,6 +170,13 @@ class ShadowFinder:
         if self.lats is None or self.lons is None or self.timezones is None:
             self.generate_timezone_grid()
 
+        if self.timezone is not None and self.timezone not in set(self.timezones):
+            warn(
+                f"Timezone '{self.timezone}' was not found in the timezone grid, so "
+                "the masked result will be empty. Expected an IANA timezone name "
+                "such as 'Europe/Kyiv'."
+            )
+
         if self.time_format == "utc":
             valid_datetimes = utc.localize(self.date_time)
             valid_lats = self.lats.flatten()
@@ -239,6 +257,14 @@ class ShadowFinder:
         self.location_likelihoods = np.reshape(
             self.location_likelihoods, np.shape(self.lons), order="A"
         )
+
+        # If a known timezone is provided, mask out candidate cells in every
+        # other timezone so only locations in the matching timezone remain.
+        if self.timezone is not None:
+            timezone_grid = np.reshape(self.timezones, np.shape(self.lons), order="A")
+            self.location_likelihoods = np.where(
+                timezone_grid == self.timezone, self.location_likelihoods, np.nan
+            )
 
     def plot_shadows(
         self,

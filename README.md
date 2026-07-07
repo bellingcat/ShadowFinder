@@ -49,6 +49,7 @@ finder.set_details(
     shadow_length=shadow_length, # shadow length in arbitrary units
     time_format=time_type, # string, either 'local' or 'utc'
     sun_altitude_angle=sun_altitude_angle, # altitude angle of the sun, in degrees above the horizon
+    timezone=timezone, # optional IANA timezone (e.g. "Europe/Kyiv"); when set, candidate locations in other timezones are masked out
 )
 
 # Run the finder
@@ -73,6 +74,13 @@ You can also use the angle to the sun directly (above the horizon, in degrees):
 shadowfinder find_sun 50 2024-02-29 13:59:59 --time_format=utc
 ```
 Where the arguments are `SUN_ALTITUDE_ANGLE`, `DATE`, and `TIME` respectively.
+
+If you already know the timezone of the location, pass `--timezone` (an IANA
+name) to mask out candidate locations in every other timezone:
+
+```shell
+shadowfinder find 10 5 2024-02-29 13:59:59 --time_format=utc --timezone="Europe/Kyiv"
+```
 
 More complete help information can be found by running:
 
