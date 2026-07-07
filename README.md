@@ -49,6 +49,12 @@ finder.set_details(
     shadow_length=shadow_length, # shadow length in arbitrary units
     time_format=time_type, # string, either 'local' or 'utc'
     sun_altitude_angle=sun_altitude_angle, # altitude angle of the sun, in degrees above the horizon
+    # Optional uncertainties. When any are given, the possible-location band is
+    # widened to the region consistent with the observation within them:
+    object_height_uncertainty=object_height_uncertainty, # same units as object_height
+    shadow_length_uncertainty=shadow_length_uncertainty, # same units as shadow_length
+    sun_altitude_angle_uncertainty=sun_altitude_angle_uncertainty, # degrees
+    time_uncertainty=time_uncertainty, # seconds (or a datetime.timedelta)
 )
 
 # Run the finder
@@ -73,6 +79,16 @@ You can also use the angle to the sun directly (above the horizon, in degrees):
 shadowfinder find_sun 50 2024-02-29 13:59:59 --time_format=utc
 ```
 Where the arguments are `SUN_ALTITUDE_ANGLE`, `DATE`, and `TIME` respectively.
+
+If the measurements or the time are only known approximately, pass their
+uncertainties to widen the band to the region consistent with the observation:
+
+```shell
+shadowfinder find 10 5 2024-02-29 13:59:59 --time_format=utc \
+  --object_height_uncertainty=0.5 --shadow_length_uncertainty=0.5 --time_uncertainty=1800
+```
+
+Where `--time_uncertainty` is in seconds (here +/- 30 minutes).
 
 More complete help information can be found by running:
 

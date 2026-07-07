@@ -9,6 +9,7 @@ import cartopy.feature as cfeature
 from cartopy.io import DownloadWarning
 from timezonefinder import TimezoneFinder
 import json
+from datetime import timedelta
 from warnings import warn, filterwarnings
 from math import radians
 
@@ -21,14 +22,27 @@ class ShadowFinder:
         date_time=None,
         time_format="utc",
         sun_altitude_angle=None,
+        object_height_uncertainty=None,
+        shadow_length_uncertainty=None,
+        sun_altitude_angle_uncertainty=None,
+        time_uncertainty=None,
     ):
         self.set_details(
-            date_time, object_height, shadow_length, time_format, sun_altitude_angle
+            date_time,
+            object_height,
+            shadow_length,
+            time_format,
+            sun_altitude_angle,
+            object_height_uncertainty,
+            shadow_length_uncertainty,
+            sun_altitude_angle_uncertainty,
+            time_uncertainty,
         )
 
         self.lats = None
         self.lons = None
         self.location_likelihoods = None
+        self.location_uncertainty = None
 
         self.timezones = None
         self.tf = TimezoneFinder(in_memory=True)
@@ -48,6 +62,10 @@ class ShadowFinder:
         shadow_length=None,
         time_format=None,
         sun_altitude_angle=None,
+        object_height_uncertainty=None,
+        shadow_length_uncertainty=None,
+        sun_altitude_angle_uncertainty=None,
+        time_uncertainty=None,
     ):
 
         if date_time is not None and date_time.tzinfo is not None:
@@ -56,6 +74,14 @@ class ShadowFinder:
             )
             date_time = date_time.replace(tzinfo=None)
         self.date_time = date_time
+
+        # Optional measurement/time uncertainties. When any are set, find_shadows
+        # propagates them into a per-cell uncertainty band (self.location_sigmas)
+        # instead of using the fixed default band width.
+        self.object_height_uncertainty = object_height_uncertainty
+        self.shadow_length_uncertainty = shadow_length_uncertainty
+        self.sun_altitude_angle_uncertainty = sun_altitude_angle_uncertainty
+        self.time_uncertainty = time_uncertainty
 
         if time_format is not None:
             assert time_format in [
@@ -153,8 +179,55 @@ class ShadowFinder:
         self.lons, self.lats = np.meshgrid(lons, lats)
         self.timezones = np.array(data["timezones"])
 
+    def _relative_difference(self, sun_altitudes):
+        # Relative difference between the shadow implied by each cell's sun
+        # altitude and the observed shadow (0 at a perfect match). Cells where
+        # the sun is below the horizon are set to nan.
+        if self.object_height is not None and self.shadow_length is not None:
+            shadow_lengths = self.object_height / np.tan(sun_altitudes)
+            shadow_lengths[sun_altitudes <= 0] = np.nan
+            return (shadow_lengths - self.shadow_length) / self.shadow_length
+
+        elif self.sun_altitude_angle is not None:
+            differences = (sun_altitudes - radians(self.sun_altitude_angle)) / radians(
+                self.sun_altitude_angle
+            )
+            differences[sun_altitudes <= 0] = np.nan
+            return differences
+
+        else:
+            raise ValueError(
+                "Either object height and shadow length or sun altitude angle needs to be set."
+            )
+
+    def _reshape_to_grid(self, values, mask):
+        # Place the values computed for the valid cells back onto the full grid.
+        if mask is None:
+            grid = values
+        else:
+            grid = np.full(np.shape(mask), np.nan)
+            np.place(grid, mask, values)
+        return np.reshape(grid, np.shape(self.lons), order="A")
+
+    def _measurement_relative_variance(self):
+        # Combined relative variance from the measurement uncertainties, used as
+        # the (location-independent) width of the acceptance band.
+        variance = 0.0
+        if self.object_height is not None and self.shadow_length is not None:
+            if self.object_height_uncertainty:
+                variance += (self.object_height_uncertainty / self.object_height) ** 2
+            if self.shadow_length_uncertainty:
+                variance += (self.shadow_length_uncertainty / self.shadow_length) ** 2
+        elif self.sun_altitude_angle is not None:
+            if self.sun_altitude_angle_uncertainty:
+                # The radians conversion cancels in the ratio.
+                variance += (
+                    self.sun_altitude_angle_uncertainty / self.sun_altitude_angle
+                ) ** 2
+        return variance
+
     def find_shadows(self):
-        # Evaluate the sun's length at a grid of points on the Earth's surface
+        # Evaluate the sun's position at a grid of points on the Earth's surface
 
         if self.lats is None or self.lons is None or self.timezones is None:
             self.generate_timezone_grid()
@@ -163,6 +236,7 @@ class ShadowFinder:
             valid_datetimes = utc.localize(self.date_time)
             valid_lats = self.lats.flatten()
             valid_lons = self.lons.flatten()
+            mask = None
         elif self.time_format == "local":
             datetimes = np.array(
                 [
@@ -189,56 +263,63 @@ class ShadowFinder:
             # Convert the datetimes to pandas series of timestamps
             valid_datetimes = pd.to_datetime(valid_datetimes, unit="s", utc=True)
 
-        pos_obj = get_position(valid_datetimes, valid_lons, valid_lats)
-
-        valid_sun_altitudes = np.array(pos_obj["altitude"])  # in radians
-
-        # If object height and shadow length are set the sun altitudes are used
-        #  to calculate the shadow lengths across the world and then compared to
-        #  the expected shadow length.
-        if self.object_height is not None and self.shadow_length is not None:
-            # Calculate the shadow length
-            shadow_lengths = self.object_height / np.apply_along_axis(
-                np.tan, 0, valid_sun_altitudes
+        def relative_difference_at(offset_seconds=0):
+            # Relative-difference surface for the valid cells at date_time shifted
+            # by offset_seconds (used to sweep the time-uncertainty band).
+            datetimes = valid_datetimes
+            if offset_seconds:
+                datetimes = valid_datetimes + timedelta(seconds=offset_seconds)
+            sun_altitudes = np.array(
+                get_position(datetimes, valid_lons, valid_lats)["altitude"]
             )
+            return self._relative_difference(sun_altitudes)
 
-            # Replace points where the sun is below the horizon with nan
-            shadow_lengths[valid_sun_altitudes <= 0] = np.nan
+        location_likelihoods = relative_difference_at()
 
-            # Show the relative difference between the calculated shadow length and the observed shadow length
-            location_likelihoods = (
-                shadow_lengths - self.shadow_length
-            ) / self.shadow_length
+        # Propagate the measurement and/or time uncertainties into a per-cell
+        # "consistency" surface: the distance from a perfect match (0) to the
+        # range of relative differences the observation could plausibly take
+        # given the uncertainties. A value of 0 means the cell is consistent
+        # with the observation. Stays None (unchanged output) when no
+        # uncertainty was supplied.
+        location_uncertainty = None
+        measurement_sigma = np.sqrt(self._measurement_relative_variance())
 
-        # If the sun altitude angle is set then this value is directly compared
-        #  to the sun altitudes across the world.
-        elif self.sun_altitude_angle is not None:
-            # Show relative difference between sun altitudes
-            location_likelihoods = (
-                np.array(valid_sun_altitudes) - radians(self.sun_altitude_angle)
-            ) / radians(self.sun_altitude_angle)
-
-            # Replace points where the sun is below the horizon
-            location_likelihoods[valid_sun_altitudes <= 0] = np.nan
-
+        if self.time_uncertainty:
+            seconds = (
+                self.time_uncertainty.total_seconds()
+                if isinstance(self.time_uncertainty, timedelta)
+                else float(self.time_uncertainty)
+            )
+            # Sweep the observation time by +/- its uncertainty. The relative
+            # difference at each cell then spans a range rather than a single
+            # value, evaluated with two extra global computations at t +/- dt
+            # rather than re-meshing the whole globe over many moments (issue #4).
+            r_minus = relative_difference_at(-seconds)
+            r_plus = relative_difference_at(seconds)
+            lower_difference = np.fmin(np.fmin(r_minus, location_likelihoods), r_plus)
+            upper_difference = np.fmax(np.fmax(r_minus, location_likelihoods), r_plus)
         else:
-            raise ValueError(
-                "Either object height and shadow length or sun altitude angle needs to be set."
-            )
+            lower_difference = location_likelihoods
+            upper_difference = location_likelihoods
 
-        if self.time_format == "utc":
-            self.location_likelihoods = location_likelihoods
-        elif self.time_format == "local":
-            self.location_likelihoods = np.full(np.shape(mask), np.nan)
-            np.place(
-                self.location_likelihoods,
-                mask,
-                location_likelihoods,
+        if self.time_uncertainty or measurement_sigma > 0:
+            # Widen the plausible range by the measurement band (issue #3), then
+            # measure how far a perfect match (0) sits outside that range. Cells
+            # whose range spans 0 are consistent with the observation (0 here).
+            lower_bound = lower_difference - measurement_sigma
+            upper_bound = upper_difference + measurement_sigma
+            gap = np.where(
+                lower_bound > 0,
+                lower_bound,
+                np.where(upper_bound < 0, -upper_bound, 0.0),
             )
+            # Keep cells where the sun is always below the horizon excluded.
+            gap = np.where(np.isnan(lower_bound), np.nan, gap)
+            location_uncertainty = self._reshape_to_grid(gap, mask)
 
-        self.location_likelihoods = np.reshape(
-            self.location_likelihoods, np.shape(self.lons), order="A"
-        )
+        self.location_likelihoods = self._reshape_to_grid(location_likelihoods, mask)
+        self.location_uncertainty = location_uncertainty
 
     def plot_shadows(
         self,
@@ -268,6 +349,15 @@ class ShadowFinder:
         cmap.set_over("white", alpha=0.5)  # Day time colour
         cmap.set_under("black", alpha=0.5)  # Night time colour
 
+        if self.location_uncertainty is not None:
+            # Uncertainties were provided: the surface is the distance from a
+            # perfect match to the observation's plausible range, so the bright
+            # region is exactly the area consistent with the observation.
+            surface = self.location_uncertainty
+        else:
+            # Default: distance of the relative-difference surface from a match.
+            surface = np.abs(self.location_likelihoods)
+
         norm = colors.BoundaryNorm(np.arange(0, 0.2, 0.02), cmap.N)
 
         # Create the map projection
@@ -279,7 +369,6 @@ class ShadowFinder:
         )
 
         # replace NaN values with a specific value (e.g. -1)
-        surface = np.abs(self.location_likelihoods)
         surface = np.where(np.isnan(surface), -1, surface)
 
         ax.pcolormesh(

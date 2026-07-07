@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from shadowfinder import ShadowFinder
 
@@ -42,6 +43,9 @@ class ShadowFinderCli:
         time: str,
         time_format: str = "utc",
         grid: str = "timezone_grid.json",
+        object_height_uncertainty: Optional[float] = None,
+        shadow_length_uncertainty: Optional[float] = None,
+        time_uncertainty: Optional[float] = None,
     ) -> None:
         """
         Find the shadow length of an object given its height and the date and time.
@@ -49,6 +53,12 @@ class ShadowFinderCli:
         :param shadow_length: Length of the shadow in arbitrary units
         :param date: Date in the format YYYY-MM-DD
         :param time: UTC Time in the format HH:MM:SS
+        :param object_height_uncertainty: Optional 1-sigma uncertainty on the
+            object height, in the same units, used to widen the result band.
+        :param shadow_length_uncertainty: Optional 1-sigma uncertainty on the
+            shadow length, in the same units, used to widen the result band.
+        :param time_uncertainty: Optional 1-sigma uncertainty on the observation
+            time, in seconds, used to widen the result band.
         """
 
         try:
@@ -58,7 +68,13 @@ class ShadowFinderCli:
         _validate_args(object_height, shadow_length, date_time)
 
         shadow_finder = ShadowFinder(
-            object_height, shadow_length, date_time, time_format
+            object_height,
+            shadow_length,
+            date_time,
+            time_format,
+            object_height_uncertainty=object_height_uncertainty,
+            shadow_length_uncertainty=shadow_length_uncertainty,
+            time_uncertainty=time_uncertainty,
         )
         shadow_finder.quick_find(grid)
 
@@ -69,12 +85,18 @@ class ShadowFinderCli:
         time: str,
         time_format: str = "utc",
         grid: str = "timezene_grid.json",
+        sun_altitude_angle_uncertainty: Optional[float] = None,
+        time_uncertainty: Optional[float] = None,
     ) -> None:
         """
         Locate a shadow based on the solar altitude angle and the date and time.
         :param sun_altitude_angle: Sun altitude angle in degrees
         :param date: Date in the format YYYY-MM-DD
         :param time: UTC Time in the format HH:MM:SS
+        :param sun_altitude_angle_uncertainty: Optional 1-sigma uncertainty on
+            the sun altitude angle, in degrees, used to widen the result band.
+        :param time_uncertainty: Optional 1-sigma uncertainty on the observation
+            time, in seconds, used to widen the result band.
         """
 
         try:
@@ -87,6 +109,8 @@ class ShadowFinderCli:
             date_time=date_time,
             time_format=time_format,
             sun_altitude_angle=sun_altitude_angle,
+            sun_altitude_angle_uncertainty=sun_altitude_angle_uncertainty,
+            time_uncertainty=time_uncertainty,
         )
         shadow_finder.quick_find(grid)
 
