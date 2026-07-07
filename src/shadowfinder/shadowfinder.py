@@ -21,9 +21,18 @@ class ShadowFinder:
         date_time=None,
         time_format="utc",
         sun_altitude_angle=None,
+        timezone=None,
     ):
+        # Default; set_details preserves this when timezone is not provided.
+        self.timezone = None
+
         self.set_details(
-            date_time, object_height, shadow_length, time_format, sun_altitude_angle
+            date_time,
+            object_height,
+            shadow_length,
+            time_format,
+            sun_altitude_angle,
+            timezone,
         )
 
         self.lats = None
@@ -48,6 +57,7 @@ class ShadowFinder:
         shadow_length=None,
         time_format=None,
         sun_altitude_angle=None,
+        timezone=None,
     ):
 
         if date_time is not None and date_time.tzinfo is not None:
@@ -56,6 +66,13 @@ class ShadowFinder:
             )
             date_time = date_time.replace(tzinfo=None)
         self.date_time = date_time
+
+        # An optional known IANA timezone name (e.g. "Europe/Kyiv"). When set,
+        # find_shadows masks out candidate cells in every other timezone. Like
+        # the other optional inputs, a value of None keeps the previous timezone
+        # rather than clearing it.
+        if timezone is not None:
+            self.timezone = timezone
 
         if time_format is not None:
             assert time_format in [
@@ -239,6 +256,21 @@ class ShadowFinder:
         self.location_likelihoods = np.reshape(
             self.location_likelihoods, np.shape(self.lons), order="A"
         )
+
+        # If a known timezone is provided, mask out candidate cells in every
+        # other timezone so only locations in the matching timezone remain.
+        if self.timezone is not None:
+            timezone_grid = np.reshape(self.timezones, np.shape(self.lons), order="A")
+            self.location_likelihoods = np.where(
+                timezone_grid == self.timezone, self.location_likelihoods, np.nan
+            )
+
+            if np.all(np.isnan(self.location_likelihoods)):
+                warn(
+                    f"No candidate locations remain after masking to timezone "
+                    f"'{self.timezone}'. Check the IANA name (e.g. 'Europe/Kyiv'); "
+                    f"the timezone may also be entirely in darkness at this time."
+                )
 
     def plot_shadows(
         self,
