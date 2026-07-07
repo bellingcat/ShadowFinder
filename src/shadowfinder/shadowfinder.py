@@ -23,6 +23,9 @@ class ShadowFinder:
         sun_altitude_angle=None,
         timezone=None,
     ):
+        # Default; set_details preserves this when timezone is not provided.
+        self.timezone = None
+
         self.set_details(
             date_time,
             object_height,
@@ -65,8 +68,11 @@ class ShadowFinder:
         self.date_time = date_time
 
         # An optional known IANA timezone name (e.g. "Europe/Kyiv"). When set,
-        # find_shadows masks out candidate cells in every other timezone.
-        self.timezone = timezone
+        # find_shadows masks out candidate cells in every other timezone. Like
+        # the other optional inputs, a value of None keeps the previous timezone
+        # rather than clearing it.
+        if timezone is not None:
+            self.timezone = timezone
 
         if time_format is not None:
             assert time_format in [
@@ -170,13 +176,6 @@ class ShadowFinder:
         if self.lats is None or self.lons is None or self.timezones is None:
             self.generate_timezone_grid()
 
-        if self.timezone is not None and self.timezone not in set(self.timezones):
-            warn(
-                f"Timezone '{self.timezone}' was not found in the timezone grid, so "
-                "the masked result will be empty. Expected an IANA timezone name "
-                "such as 'Europe/Kyiv'."
-            )
-
         if self.time_format == "utc":
             valid_datetimes = utc.localize(self.date_time)
             valid_lats = self.lats.flatten()
@@ -265,6 +264,13 @@ class ShadowFinder:
             self.location_likelihoods = np.where(
                 timezone_grid == self.timezone, self.location_likelihoods, np.nan
             )
+
+            if np.all(np.isnan(self.location_likelihoods)):
+                warn(
+                    f"No candidate locations remain after masking to timezone "
+                    f"'{self.timezone}'. Check the IANA name (e.g. 'Europe/Kyiv'); "
+                    f"the timezone may also be entirely in darkness at this time."
+                )
 
     def plot_shadows(
         self,

@@ -81,3 +81,43 @@ def test_no_timezone_leaves_multiple_timezones():
     timezone_grid = np.reshape(finder.timezones, np.shape(finder.lons), order="A")
     surviving = ~np.isnan(finder.location_likelihoods)
     assert len(np.unique(timezone_grid[surviving])) > 1
+
+
+def test_set_details_preserves_timezone_on_partial_update():
+    """Re-configuring only some details (e.g. the time) must not silently drop
+    a previously set timezone mask, matching how the other optional inputs are
+    preserved when passed as None."""
+    # GIVEN a finder with a timezone mask
+    finder = ShadowFinder(
+        object_height=6,
+        shadow_length=3.2,
+        date_time=datetime(2024, 1, 1, 12, 0, 0),
+        time_format="utc",
+        timezone="Europe/Kyiv",
+    )
+
+    # WHEN only the date_time is updated
+    finder.set_details(date_time=datetime(2024, 1, 1, 13, 0, 0))
+
+    # THEN the timezone is retained
+    assert finder.timezone == "Europe/Kyiv"
+
+
+def test_empty_mask_warns(recwarn):
+    """A timezone that leaves no candidate cells (misspelled, or in darkness)
+    warns rather than silently returning a blank map."""
+    # GIVEN a valid IANA timezone that is in night at this instant
+    finder = ShadowFinder(
+        object_height=6,
+        shadow_length=3.2,
+        date_time=datetime(2024, 1, 1, 12, 0, 0),
+        time_format="utc",
+        timezone="America/Anchorage",
+    )
+
+    # WHEN
+    finder.find_shadows()
+
+    # THEN the result is empty and a warning was emitted
+    assert np.all(np.isnan(finder.location_likelihoods))
+    assert any("No candidate locations remain" in str(w.message) for w in recwarn)
