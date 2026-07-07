@@ -68,7 +68,7 @@ class ShadowFinderCli:
         date: str,
         time: str,
         time_format: str = "utc",
-        grid: str = "timezene_grid.json",
+        grid: str = "timezone_grid.json",
     ) -> None:
         """
         Locate a shadow based on the solar altitude angle and the date and time.
